@@ -142,11 +142,20 @@ namespace TaskFlowManagement.Infrastructure.Repositories
             await ctx.SaveChangesAsync();
         }
 
+        // FIX BUG #4: Dùng ExecuteUpdateAsync thay vì ctx.Expenses.Update(entity)
+        // Update(entity) đánh dấu TẤT CẢ cột là Modified → ghi đè CreatedAt.
+        // ExecuteUpdateAsync chỉ cập nhật đúng 5 trường cần thiết, giống pattern của TaskRepository.
         public async Task UpdateAsync(Expense entity)
         {
             using var ctx = _contextFactory.CreateDbContext();
-            ctx.Expenses.Update(entity);
-            await ctx.SaveChangesAsync();
+            await ctx.Expenses
+                .Where(e => e.Id == entity.Id)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(e => e.ProjectId,   entity.ProjectId)
+                    .SetProperty(e => e.ExpenseType, entity.ExpenseType)
+                    .SetProperty(e => e.Amount,      entity.Amount)
+                    .SetProperty(e => e.ExpenseDate, entity.ExpenseDate)
+                    .SetProperty(e => e.Note,        entity.Note));
         }
 
         public async Task DeleteAsync(int id)

@@ -229,36 +229,59 @@ namespace TaskFlowManagement.WinForms.Forms
                     MessageBoxButtons.YesNo,
                     MessageBoxIcon.Warning) != DialogResult.Yes) return;
 
-            var (ok, msg) = await _projectService.DeleteProjectAsync(_selectedProject.Id);
-            MessageBox.Show(msg,
-                ok ? "Thành công" : "Không thể xóa",
-                MessageBoxButtons.OK,
-                ok ? MessageBoxIcon.Information : MessageBoxIcon.Error);
+            // FIX BUG #3: Chống spam-click nút Xóa
+            btnDelete.Enabled = false;
+            try
+            {
+                var (ok, msg) = await _projectService.DeleteProjectAsync(_selectedProject.Id);
+                MessageBox.Show(msg,
+                    ok ? "Thành công" : "Không thể xóa",
+                    MessageBoxButtons.OK,
+                    ok ? MessageBoxIcon.Information : MessageBoxIcon.Error);
 
-            if (ok) await LoadProjectsAsync();
+                if (ok) await LoadProjectsAsync();
+            }
+            finally
+            {
+                btnDelete.Enabled = true;
+            }
         }
 
         // ── Status Change ─────────────────────────────────────────────────────
+
+        // FIX BUG #7: Lưu field để Dispose tránh GDI handle leak
+        private ContextMenuStrip? _statusMenu;
 
         private async void btnStatus_Click(object sender, EventArgs e)
         {
             if (_selectedProject == null) return;
 
-            var menu     = new ContextMenuStrip();
-            var statuses = new[] { "NotStarted", "InProgress", "OnHold", "Completed", "Cancelled" };
-
-            foreach (var s in statuses)
+            // FIX BUG #3: Chống spam-click nút Trạng thái
+            btnStatus.Enabled = false;
+            try
             {
-                var status = s;
-                var item   = menu.Items.Add(UIHelper.FormatProjectStatus(status));
-                item.Click += async (_, _) =>
+                _statusMenu?.Dispose();
+                _statusMenu = new ContextMenuStrip();
+                var menu     = _statusMenu;
+                var statuses = new[] { "NotStarted", "InProgress", "OnHold", "Completed", "Cancelled" };
+
+                foreach (var s in statuses)
                 {
-                    var (ok, msg) = await _projectService.ChangeStatusAsync(_selectedProject.Id, status);
-                    if (ok) await LoadProjectsAsync();
-                    else    MessageBox.Show(msg, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                };
+                    var status = s;
+                    var item   = menu.Items.Add(UIHelper.FormatProjectStatus(status));
+                    item.Click += async (_, _) =>
+                    {
+                        var (ok, msg) = await _projectService.ChangeStatusAsync(_selectedProject.Id, status);
+                        if (ok) await LoadProjectsAsync();
+                        else    MessageBox.Show(msg, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    };
+                }
+                menu.Show(btnStatus, new Point(0, btnStatus.Height));
             }
-            menu.Show(btnStatus, new Point(0, btnStatus.Height));
+            finally
+            {
+                btnStatus.Enabled = true;
+            }
         }
 
         // ── Members ───────────────────────────────────────────────────────────

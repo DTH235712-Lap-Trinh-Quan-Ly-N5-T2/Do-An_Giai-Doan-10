@@ -110,6 +110,8 @@ namespace TaskFlowManagement.WinForms.Forms
                 "Xác nhận xóa", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
             if (confirm != DialogResult.Yes) return;
 
+            // FIX BUG #3: Chống spam-click nút Xóa
+            btnDelete.Enabled = false;
             try
             {
                 await _customerRepo.DeleteAsync(_selectedCustomer.Id);
@@ -124,6 +126,10 @@ namespace TaskFlowManagement.WinForms.Forms
                     "Không thể xóa vì khách hàng còn dự án liên quan.\n\n" +
                     "Chi tiết: " + (ex.InnerException?.Message ?? ex.Message),
                     "Không thể xóa", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                btnDelete.Enabled = true;
             }
         }
 

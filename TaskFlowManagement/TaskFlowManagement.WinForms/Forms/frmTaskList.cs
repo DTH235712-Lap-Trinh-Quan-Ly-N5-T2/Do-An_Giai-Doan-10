@@ -161,6 +161,10 @@ namespace TaskFlowManagement.WinForms.Forms
             foreach (var p in _projects)
                 cboProjectFilter.Items.Add(new ComboItem(p.Id, p.Name));
             cboProjectFilter.SelectedIndex = 0;
+
+            // GD10: Tự động giãn chiều rộng các ComboBox để hiển thị đầy đủ tên dài
+            cboProjectFilter.AdjustDropDownWidth();
+            cboStatusFilter.AdjustDropDownWidth();
         }
 
         // ── Load Data ─────────────────────────────────────────────────────────
@@ -173,7 +177,10 @@ namespace TaskFlowManagement.WinForms.Forms
                 var keyword   = txtSearch.Text.Trim();
                 var statusId  = GetComboId(cboStatusFilter);
                 var projectId = _externalProjectId ?? GetComboId(cboProjectFilter);
-                int? assignedToId = AppSession.IsManager ? null : AppSession.UserId;
+                // GD10: Phân tách rõ ràng luồng Admin / Manager / Developer
+                // Admin (AppSession.IsAdmin) -> luôn xem toàn bộ -> null
+                // Manager -> nếu không phải Admin -> có thể lấy null ở đây và filter theo dự án quản lý (tuỳ logic _taskService), hiện tại đang để null -> xem toàn bộ của họ. 
+                int? assignedToId = (AppSession.IsAdmin || AppSession.IsManager) ? null : AppSession.UserId;
 
                 List<TaskItem> items;
                 int total;
@@ -242,6 +249,12 @@ namespace TaskFlowManagement.WinForms.Forms
                 BindGrid(items);
                 UpdatePagingLabel();
                 SetStatus($"Hiển thị {items.Count} / {total} công việc");
+
+                // Diagnostic: Nếu 0 task, thông báo rõ nguyên nhân (DB trống hay Filter lỗi)
+                if (total == 0 && AppSession.IsAdmin)
+                {
+                    SetStatus("⚠ DB trống hoặc filter lỗi (Admin 0 Task)");
+                }
             }
             catch (Exception ex)
             {
@@ -412,13 +425,22 @@ namespace TaskFlowManagement.WinForms.Forms
                     MessageBoxButtons.YesNo,
                     MessageBoxIcon.Warning) != DialogResult.Yes) return;
 
-            var (ok, msg) = await _taskService.DeleteTaskAsync(_selectedTask.Id);
-            MessageBox.Show(msg,
-                ok ? "Thành công" : "Không thể xóa",
-                MessageBoxButtons.OK,
-                ok ? MessageBoxIcon.Information : MessageBoxIcon.Error);
+            // FIX BUG #3: Chống spam-click nút Xóa
+            btnDelete.Enabled = false;
+            try
+            {
+                var (ok, msg) = await _taskService.DeleteTaskAsync(_selectedTask.Id);
+                MessageBox.Show(msg,
+                    ok ? "Thành công" : "Không thể xóa",
+                    MessageBoxButtons.OK,
+                    ok ? MessageBoxIcon.Information : MessageBoxIcon.Error);
 
-            if (ok) await LoadDataAsync();
+                if (ok) await LoadDataAsync();
+            }
+            finally
+            {
+                btnDelete.Enabled = true;
+            }
         }
 
         private async void btnRefresh_Click(object sender, EventArgs e)

@@ -75,6 +75,9 @@ namespace TaskFlowManagement.WinForms.Forms
             foreach (var u in _availableUsers)
                 cboUser.Items.Add($"{u.FullName}  ({u.Username})");
             if (cboUser.Items.Count > 0) cboUser.SelectedIndex = 0;
+            
+            // GD10: Tự động điều chỉnh kích thước Dropdown
+            cboUser.AdjustDropDownWidth();
         }
 
         // ── Events ────────────────────────────────────────────────────────────
@@ -89,18 +92,27 @@ namespace TaskFlowManagement.WinForms.Forms
                 return;
             }
 
-            var user = _availableUsers[cboUser.SelectedIndex];
-            var role = cboProjectRole.SelectedItem?.ToString() ?? "Developer";
+            // FIX BUG #3: Chống spam-click nút Thêm
+            btnAddMember.Enabled = false;
+            try
+            {
+                var user = _availableUsers[cboUser.SelectedIndex];
+                var role = cboProjectRole.SelectedItem?.ToString() ?? "Developer";
 
-            var (ok, msg) = await _projectService.AddMemberAsync(_project.Id, user.Id, role);
-            if (ok)
-            {
-                await LoadMembersAsync();
-                await LoadAvailableUsersAsync();
+                var (ok, msg) = await _projectService.AddMemberAsync(_project.Id, user.Id, role);
+                if (ok)
+                {
+                    await LoadMembersAsync();
+                    await LoadAvailableUsersAsync();
+                }
+                else
+                {
+                    MessageBox.Show(msg, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
             }
-            else
+            finally
             {
-                MessageBox.Show(msg, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                btnAddMember.Enabled = true;
             }
         }
 
@@ -115,11 +127,20 @@ namespace TaskFlowManagement.WinForms.Forms
                     $"Xóa \"{member.User?.FullName}\" khỏi dự án?\n\nLịch sử tham gia vẫn được lưu lại.",
                     "Xác nhận", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
 
-            var (ok, _) = await _projectService.RemoveMemberAsync(_project.Id, userId);
-            if (ok)
+            // FIX BUG #3: Chống spam-click nút Xóa thành viên
+            btnRemove.Enabled = false;
+            try
             {
-                await LoadMembersAsync();
-                await LoadAvailableUsersAsync();
+                var (ok, _) = await _projectService.RemoveMemberAsync(_project.Id, userId);
+                if (ok)
+                {
+                    await LoadMembersAsync();
+                    await LoadAvailableUsersAsync();
+                }
+            }
+            finally
+            {
+                btnRemove.Enabled = true;
             }
         }
 

@@ -26,11 +26,11 @@ namespace TaskFlowManagement.WinForms.Common
 
         // ---- Computed properties – kiểm tra quyền nhanh ----
         // IsAdmin: chỉ user có role "Admin"
-        public static bool IsAdmin     => Roles.Contains("Admin");
+        public static bool IsAdmin     => Roles.Any(r => r.Equals("Admin", StringComparison.OrdinalIgnoreCase));
         // IsManager: Manager hoặc Admin (Admin có toàn quyền)
-        public static bool IsManager   => Roles.Contains("Manager") || IsAdmin;
+        public static bool IsManager   => IsAdmin || Roles.Any(r => r.Equals("Manager", StringComparison.OrdinalIgnoreCase));
         // IsDeveloper: user thường, quyền hạn chế nhất
-        public static bool IsDeveloper => Roles.Contains("Developer");
+        public static bool IsDeveloper => Roles.Any(r => r.Equals("Developer", StringComparison.OrdinalIgnoreCase));
         // IsLoggedIn: kiểm tra đã đăng nhập chưa (UserId > 0)
         public static bool IsLoggedIn  => UserId > 0;
 

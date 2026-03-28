@@ -65,8 +65,11 @@ namespace TaskFlowManagement.WinForms.Forms
                 {
                     cboProject.Items.Add(new ComboItem(p.Id, p.Name));
                 }
-                
                 if (cboProject.Items.Count > 0) cboProject.SelectedIndex = 0;
+                
+                // GD10: Tự động điều chỉnh kích thước Dropdown
+                cboProject.AdjustDropDownWidth();
+                cboType.AdjustDropDownWidth();
             }
             catch (Exception ex)
             {

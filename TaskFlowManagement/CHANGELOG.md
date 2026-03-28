@@ -4,6 +4,38 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ---
 
+## [v9.1.0] – 2026-03-31 · Final QA Fixes: Zero-Bug Pre-Presentation Pass
+
+### 🔴 Fixed — Critical Hidden Bugs (Resolved Memory Leaks, Event Over-registration & EF Tracking Conflicts)
+
+#### Bug #1 — Memory Leak: frmDashboard Event Handler không bao giờ gỡ được
+- **File**: `Forms/frmDashboard.cs`
+- **Root cause**: `TaskDataChanged` được đăng ký bằng anonymous lambda, nhưng `FormClosing` tạo một lambda MỚI để gỡ → C# so sánh reference khác nhau → handler zombie tích lũy → crash `ObjectDisposedException` khi mở lại Dashboard.
+- **Fix**: Khai báo field `private EventHandler? _taskDataChangedHandler` và dùng field này cho cả `+=` và `-=` để đảm bảo cùng reference.
+
+#### Bug #2 — Event Over-registration: txtNewComment.KeyDown trong frmTaskEdit
+- **File**: `Forms/frmTaskEdit.cs`
+- **Root cause**: `txtNewComment.KeyDown += txtNewComment_KeyDown` trong `OnLoad` có thể bị đăng ký trùng nếu Designer đã wire hoặc OnLoad gọi lại → comment bị gửi 2 lần khi nhấn Enter.
+- **Fix**: Áp dụng Idempotent Pattern: `-=` trước rồi `+=`.
+
+#### Bug #3 — Spam-Click Race Condition: Các nút Delete/Add/Remove (7 nơi)
+- **Files**: `frmProjects.cs`, `frmTaskList.cs`, `frmCustomers.cs`, `frmProjectMembers.cs`, `frmExpenses.cs`
+- **Root cause**: Các `async void` handler không disable button → click đúp nhanh → 2 request DB song song → xóa trùng / thêm member trùng.
+- **Fix**: Bao `btn.Enabled = false` + `try/finally { btn.Enabled = true; }` cho tất cả: `btnDelete`, `btnStatus`, `btnAddMember`, `btnRemove`.
+- **Bonus**: `frmProjects.btnStatus_Click` — thêm `private ContextMenuStrip? _statusMenu` field + Dispose trước khi tạo mới để tránh GDI handle leak.
+
+#### Bug #4 — EF Core Tracking: ExpenseRepository.UpdateAsync ghi đè CreatedAt
+- **File**: `Infrastructure/Repositories/ExpenseRepository.cs`
+- **Root cause**: `ctx.Expenses.Update(entity)` đánh dấu TẤT CẢ cột là `Modified` → ghi đè `CreatedAt` bằng giá trị cũ hoặc null; có thể ném `InvalidOperationException: already being tracked` nếu cùng entity được load trước đó.
+- **Fix**: Thay bằng `ExecuteUpdateAsync` chỉ cập nhật đúng 5 trường cần thiết (`ProjectId`, `ExpenseType`, `Amount`, `ExpenseDate`, `Note`) — nhất quán với pattern đã dùng trong `TaskRepository`.
+
+#### Bug #5 & #6 — Resource Leak: frmChangePassword và frmLogin không Dispose
+- **Files**: `Forms/frmMain.cs`, `Program.cs`
+- **Root cause**: `ShowDialog()` không tự Dispose form → mỗi lần đổi mật khẩu hoặc logout = leak 1 Form object với toàn bộ GDI resource bên trong.
+- **Fix**: Bọc tất cả `ShowDialog()` cho `frmChangePassword` và `frmLogin` vào `using var`.
+
+---
+
 ## [v9.0.0] – 2026-03-30### Added / Fixed
 - **UC-Report-01**: Báo cáo Chi phí & Ngân sách Dự án dùng công nghệ Microsoft RDLC.
 - Dứt điểm tương thích RDLC trên .NET 8 (Fix Schema 2008, DateOnly Mapping và Dependency Pinning).

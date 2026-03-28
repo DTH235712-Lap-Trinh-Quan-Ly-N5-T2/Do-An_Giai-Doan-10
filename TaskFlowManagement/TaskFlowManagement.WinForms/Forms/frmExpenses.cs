@@ -180,6 +180,8 @@ namespace TaskFlowManagement.WinForms.Forms
             btnExportReport.Visible = canManage;
         }
 
+        private bool _isLoadingProjects = false;
+
         private void WireEvents()
         {
             this.Load += async (s, e) => {
@@ -187,7 +189,7 @@ namespace TaskFlowManagement.WinForms.Forms
                 await LoadExpensesAsync();
             };
 
-            cboProject.SelectedIndexChanged += async (s, e) => await LoadExpensesAsync();
+            cboProject.SelectedIndexChanged += async (s, e) => { if (!_isLoadingProjects) await LoadExpensesAsync(); };
             cboExpenseType.SelectedIndexChanged += (s, e) => ApplyFilter();
             btnRefresh.Click += async (s, e) => await LoadExpensesAsync();
 
@@ -221,6 +223,7 @@ namespace TaskFlowManagement.WinForms.Forms
 
         private async Task LoadProjectsAsync()
         {
+            _isLoadingProjects = true;
             try
             {
                 var projects = await _projectService.GetProjectsForUserAsync(AppSession.UserId, AppSession.IsManager || AppSession.IsAdmin);
@@ -234,10 +237,18 @@ namespace TaskFlowManagement.WinForms.Forms
                 }
                 
                 cboProject.SelectedIndex = 0;
+                
+                // GD10: Tự động giãn chiều rộng ComboBox
+                cboProject.AdjustDropDownWidth();
+                cboExpenseType.AdjustDropDownWidth();
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"Lỗi tải dự án: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                _isLoadingProjects = false;
             }
         }
 
@@ -363,12 +374,20 @@ namespace TaskFlowManagement.WinForms.Forms
         {
             if (_selectedExpense == null) return;
 
-            if (MessageBox.Show($"Xác nhận xóa khoản chi {(_selectedExpense.Amount.ToString("N0"))} ₫ cho dự án {_selectedExpense.Project?.Name}?", 
-                "Xác nhận", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+            if (MessageBox.Show($"Xác nhận xóa khoản chi {(_selectedExpense.Amount.ToString("N0"))} ₫ cho dự án {_selectedExpense.Project?.Name}?",
+                "Xác nhận", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
+
+            // FIX BUG #3: Chống spam-click nút Xóa chi phí
+            btnDelete.Enabled = false;
+            try
             {
                 var (ok, msg) = await _expenseService.DeleteExpenseAsync(_selectedExpense.Id);
                 if (ok) await LoadExpensesAsync();
                 else MessageBox.Show(msg, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                btnDelete.Enabled = _selectedExpense != null;
             }
         }
 

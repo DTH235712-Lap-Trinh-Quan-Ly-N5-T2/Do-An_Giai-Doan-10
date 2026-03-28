@@ -24,6 +24,28 @@ namespace TaskFlowManagement.WinForms
         [STAThread]
         static void Main()
         {
+            // --- Cấu hình Bắt lỗi Toàn cục (Global Exception Handling) ---
+            Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
+            
+            // 1. Lỗi xuất phát từ UI Thread (Nhấn nút, cuộn chuột, load form...)
+            Application.ThreadException += (sender, args) =>
+            {
+                MessageBox.Show(
+                    $"[UI Error] Đã xảy ra sự cố đột xuất:\n\n{args.Exception.Message}\n\nHệ thống vẫn đang an toàn. Vui lòng thử lại thao tác.", 
+                    "Cảnh báo Lỗi", 
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            };
+
+            // 2. Lỗi xuất phát từ Background Thread (Task.Run, BackgroundWorker...)
+            AppDomain.CurrentDomain.UnhandledException += (sender, args) =>
+            {
+                var ex = args.ExceptionObject as Exception;
+                MessageBox.Show(
+                    $"[Background Error] Lỗi tiến trình ngầm:\n\n{ex?.Message}", 
+                    "Lỗi Hệ Thống", 
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            };
+
             ApplicationConfiguration.Initialize();
             Application.SetHighDpiMode(HighDpiMode.SystemAware);
 
@@ -115,7 +137,8 @@ namespace TaskFlowManagement.WinForms
             }
 
             // Khởi động: Login → Main
-            var loginForm = ServiceProvider.GetRequiredService<frmLogin>();
+            // FIX BUG #6: Bọc using để Dispose frmLogin sau khi đăng nhập xong
+            using var loginForm = ServiceProvider.GetRequiredService<frmLogin>();
             if (loginForm.ShowDialog() == DialogResult.OK)
             {
                 var mainForm = ServiceProvider.GetRequiredService<frmMain>();

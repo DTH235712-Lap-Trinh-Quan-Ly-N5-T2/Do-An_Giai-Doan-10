@@ -130,7 +130,8 @@ namespace TaskFlowManagement.WinForms.Forms
 
         private void menuChangePassword_Click(object sender, EventArgs e)
         {
-            var frm = _serviceProvider.GetRequiredService<frmChangePassword>();
+            // FIX BUG #5: Bọc using để Dispose form ngay sau khi đóng, tránh memory leak
+            using var frm = _serviceProvider.GetRequiredService<frmChangePassword>();
             frm.ShowDialog(this);
         }
 
@@ -144,7 +145,8 @@ namespace TaskFlowManagement.WinForms.Forms
             AppSession.Logout();
             this.Hide();
 
-            var loginForm = _serviceProvider.GetRequiredService<frmLogin>();
+            // FIX BUG #6: Bọc using để Dispose frmLogin sau mỗi lần logout
+            using var loginForm = _serviceProvider.GetRequiredService<frmLogin>();
             if (loginForm.ShowDialog() == DialogResult.OK)
             {
                 UpdateUserInfo();

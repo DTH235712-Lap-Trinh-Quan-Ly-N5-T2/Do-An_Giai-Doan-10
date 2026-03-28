@@ -22,6 +22,7 @@ namespace TaskFlowManagement.WinForms.Forms
         private List<BudgetReportDto> _currentBudget = new();
         private ProjectBudgetSummaryDto? _currentBudgetSummary = null;
         private int _hoverProgressIndex = -1;
+        private EventHandler? _taskDataChangedHandler;
 
         public frmDashboard(ITaskService taskService, IProjectService projectService, IExpenseService expenseService)
         {
@@ -81,21 +82,24 @@ namespace TaskFlowManagement.WinForms.Forms
 
             pnlBudgetChart.BackColor = UIHelper.ColorSurface;
             pnlBudgetChart.BorderStyle = BorderStyle.FixedSingle;
+            pnlBudgetChart.AutoScroll = true;
 
             // Wire event
             cboProject.SelectedIndexChanged += async (s, e) => await LoadDashboardDataAsync();
             pnlProgressChart.MouseMove += PnlProgressChart_MouseMove;
             pnlProgressChart.MouseLeave += (s, e) => { _hoverProgressIndex = -1; pnlProgressChart.Invalidate(); };
 
-            // Phụ trách đồng bộ dữ liệu Realtime khi có thay đổi từ Task/Expense Service
-            _taskService.TaskDataChanged += async (s, e) => {
+            // FIX BUG #1: Dùng named field handler thay vì anonymous lambda
+            // để đảm bảo FormClosing gỡ đúng handler đã đăng ký (cùng reference).
+            _taskDataChangedHandler = async (s, e) =>
+            {
                 if (this.IsHandleCreated && !this.IsDisposed)
                 {
                     this.BeginInvoke(new Action(async () => await LoadDashboardDataAsync()));
                 }
             };
-            this.FormClosing += (s, e) => _taskService.TaskDataChanged -= async (s, e) => await LoadDashboardDataAsync(); // Cần cẩn thận với lambda anonymous!
-            // Sửa lại: Dùng method cụ thể để gỡ sự kiện chính xác.
+            _taskService.TaskDataChanged += _taskDataChangedHandler;
+            this.FormClosing += (s, e) => _taskService.TaskDataChanged -= _taskDataChangedHandler;
 
             // Set DoubleBuffered
             EnableDoubleBuffer(pnlPieChart);
@@ -176,6 +180,8 @@ namespace TaskFlowManagement.WinForms.Forms
             cboProject.DisplayMember = "Name";
             cboProject.ValueMember = "Id";
             cboProject.SelectedIndex = 0;
+            
+            cboProject.AdjustDropDownWidth();
             
             if (!AppSession.IsManager && !AppSession.IsAdmin)
             {
@@ -580,8 +586,29 @@ namespace TaskFlowManagement.WinForms.Forms
                 }
             }
 
-            int pairWidth = Math.Min(100, (pnlBudgetChart.Width - paddingSide - 40) / _currentBudget.Count);
+            // Tính toán bề rộng cột cứng để đảm bảo hiển thị đẹp 5-7 mục
+            int visibleColumns = 5;
+            int maxBudgetCount = Math.Max(1, _currentBudget.Count);
+            int totalDisplayWidth = pnlBudgetChart.ClientSize.Width - paddingSide - 40;
+            // Ép minimum width cho mỗi cặp cột. Nếu ít điểm hơn 5 thì cho giãn đều.
+            int pairWidth = Math.Max(totalDisplayWidth / visibleColumns, totalDisplayWidth / maxBudgetCount);
             int barWidth = pairWidth / 2 - 10;
+            if (barWidth > 40) barWidth = 40; // Giói hạn độ dày tối đa
+
+            // Tính toán tổng width cần thiết để bật thanh cuộn (Scrollbar ngang)
+            int totalRequiredWidth = paddingSide + (_currentBudget.Count * pairWidth) + 40;
+            if (pnlBudgetChart.AutoScrollMinSize.Width != totalRequiredWidth)
+                pnlBudgetChart.AutoScrollMinSize = new Size(totalRequiredWidth, 0);
+
+            // Bắt đầu dịch chuyển trục Toạ độ X để CUỘN
+            var state = g.Save();
+            
+            // Đặt vùng Clip để không vẽ tràn qua Y-Axis bên trái
+            Rectangle clipRect = new Rectangle(paddingSide + 1, 0, pnlBudgetChart.Width - paddingSide, pnlBudgetChart.Height);
+            g.SetClip(clipRect);
+            
+            g.TranslateTransform(pnlBudgetChart.AutoScrollPosition.X, 0);
+
             int currentX = paddingSide + 20;
 
             foreach (var b in _currentBudget)
@@ -613,23 +640,36 @@ namespace TaskFlowManagement.WinForms.Forms
                     g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
                     SizeF textSize = g.MeasureString(uPct, UIHelper.FontLabel);
                     
-                    float xPos = currentX + (pairWidth * 2 / 2 - textSize.Width) / 2;
+                    float xPos = currentX + (barWidth * 2 + 2 - textSize.Width) / 2;
                     float yPos = startY - Math.Max(hBudget, hExpense) - textSize.Height - 5;
                     g.DrawString(uPct, UIHelper.FontLabel, strBrush, xPos, yPos);
                 }
 
-                // Trục X (Tên Dự án)
+                // Trục X (Tên Dự án) - Xoay Label Góc -45 độ
                 using (var strBrush = new SolidBrush(UIHelper.ColorMuted))
                 {
                     string label = b.ProjectName;
-                    if (label.Length > 12) label = label.Substring(0, 10) + "...";
-                    var sf = new StringFormat { Alignment = StringAlignment.Center };
-                    var labelRect = new RectangleF(currentX - 5, startY + 10, pairWidth, 30);
-                    g.DrawString(label, UIHelper.FontSmall, strBrush, labelRect, sf);
+                    if (label.Length > 25) label = label.Substring(0, 22) + "..."; // Chữ dài hơn nhờ ko bị đè
+                    
+                    g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
+                    float midBarX = currentX + (barWidth * 2 + 2) / 2f;
+                    
+                    // Thực hiện Rotate Transform
+                    g.TranslateTransform(midBarX, startY + 15);
+                    g.RotateTransform(-45f);
+                    
+                    g.DrawString(label, UIHelper.FontSmall, strBrush, 0, 0);
+                    
+                    // Phục hồi lại để tiếp tục vẽ
+                    g.RotateTransform(45f);
+                    g.TranslateTransform(-midBarX, -(startY + 15));
                 }
 
                 currentX += pairWidth;
             }
+
+            // Restore loại bỏ Translate và Clip để vẽ Legend
+            g.Restore(state);
 
             // Legend cho Budget (cũng vuông góc bo tròn)
             int legX = pnlBudgetChart.Width - 250;

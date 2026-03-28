@@ -7,9 +7,9 @@ namespace TaskFlowManagement.Infrastructure.Data.Seed
     ///
     /// Mật khẩu được hash bằng BCrypt (WorkFactor 12).
     /// Tài khoản test:
-    ///   admin     / Admin@123
-    ///   manager1  / Manager@123
-    ///   dev1      / Dev@123
+    ///   admin     / 123456
+    ///   manager1  / 123456
+    ///   dev1      / 123456
     /// </summary>
     internal static class UserSeeder
     {
@@ -17,9 +17,11 @@ namespace TaskFlowManagement.Infrastructure.Data.Seed
         {
             // Pre-compute hash 1 lần cho mỗi loại mật khẩu
             // (tránh gọi BCrypt 15 lần → seed nhanh hơn)
-            var adminHash   = SeedHelper.Hash("Admin@123");
-            var managerHash = SeedHelper.Hash("Manager@123");
-            var devHash     = SeedHelper.Hash("Dev@123");
+            var defaultHash = SeedHelper.Hash("123456");
+
+            var adminHash   = defaultHash;
+            var managerHash = defaultHash;
+            var devHash     = defaultHash;
 
             return new List<User>
             {

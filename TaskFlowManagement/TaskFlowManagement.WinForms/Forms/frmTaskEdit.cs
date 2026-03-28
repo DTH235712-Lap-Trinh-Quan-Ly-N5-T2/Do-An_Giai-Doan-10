@@ -111,6 +111,9 @@ namespace TaskFlowManagement.WinForms.Forms
 
             // DoubleBuffer cho FlowLayoutPanel chống flickering
             SetDoubleBuffered(pnlCommentsList);
+            // FIX BUG #2: Idempotent pattern — gỡ trước rồi mới đăng ký
+            // để đảm bảo handler chỉ chạy duy nhất 1 lần dù OnLoad gọi lại.
+            txtNewComment.KeyDown -= txtNewComment_KeyDown;
             txtNewComment.KeyDown += txtNewComment_KeyDown;
         }
 
@@ -184,6 +187,13 @@ namespace TaskFlowManagement.WinForms.Forms
                 foreach (var u in _users.OrderBy(u => u.FullName))
                     cboAssignee.Items.Add(new ComboItem(u.Id, u.FullName));
                 cboAssignee.SelectedIndex = 0;
+
+                // GD10: Tự động điều chỉnh kích thước Dropdown để không bị cắt chữ dự án hay tên người đài
+                cboProject.AdjustDropDownWidth();
+                cboCategory.AdjustDropDownWidth();
+                cboAssignee.AdjustDropDownWidth();
+                cboStatus.AdjustDropDownWidth();
+                cboPriority.AdjustDropDownWidth();
             }
             catch (Exception ex)
             {
