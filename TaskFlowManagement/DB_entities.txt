@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿### FILE: Attachment.cs
+using System.ComponentModel.DataAnnotations;
 
 namespace TaskFlowManagement.Core.Entities
 {
@@ -26,6 +27,9 @@ namespace TaskFlowManagement.Core.Entities
         public User UploadedBy { get; set; } = null!;
     }
 }
+
+
+### FILE: Category.cs
 using System.ComponentModel.DataAnnotations;
 
 namespace TaskFlowManagement.Core.Entities
@@ -43,6 +47,9 @@ namespace TaskFlowManagement.Core.Entities
         public ICollection<TaskItem> TaskItems { get; set; } = new List<TaskItem>();
     }
 }
+
+
+### FILE: Comment.cs
 using System.ComponentModel.DataAnnotations;
 
 namespace TaskFlowManagement.Core.Entities
@@ -63,6 +70,9 @@ namespace TaskFlowManagement.Core.Entities
         public User User { get; set; } = null!;
     }
 }
+
+
+### FILE: Customer.cs
 using System.ComponentModel.DataAnnotations;
 
 namespace TaskFlowManagement.Core.Entities
@@ -95,6 +105,9 @@ namespace TaskFlowManagement.Core.Entities
         public ICollection<Project> Projects { get; set; } = new List<Project>();
     }
 }
+
+
+### FILE: Expense.cs
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -127,6 +140,9 @@ namespace TaskFlowManagement.Core.Entities
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }
+
+
+### FILE: Priority.cs
 using System.ComponentModel.DataAnnotations;
 
 namespace TaskFlowManagement.Core.Entities
@@ -147,6 +163,9 @@ namespace TaskFlowManagement.Core.Entities
         public ICollection<TaskItem> TaskItems { get; set; } = new List<TaskItem>();
     }
 }
+
+
+### FILE: Project.cs
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -212,6 +231,9 @@ namespace TaskFlowManagement.Core.Entities
         }
     }
 }
+
+
+### FILE: ProjectMember.cs
 using System.ComponentModel.DataAnnotations;
 
 namespace TaskFlowManagement.Core.Entities
@@ -238,6 +260,9 @@ namespace TaskFlowManagement.Core.Entities
         public DateTime? LeftAt { get; set; }
     }
 }
+
+
+### FILE: Role.cs
 using System.ComponentModel.DataAnnotations;
 
 namespace TaskFlowManagement.Core.Entities
@@ -256,6 +281,9 @@ namespace TaskFlowManagement.Core.Entities
         public ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
     }
 }
+
+
+### FILE: Status.cs
 using System.ComponentModel.DataAnnotations;
 
 namespace TaskFlowManagement.Core.Entities
@@ -290,6 +318,9 @@ namespace TaskFlowManagement.Core.Entities
         public ICollection<TaskItem> TaskItems { get; set; } = new List<TaskItem>();
     }
 }
+
+
+### FILE: Tag.cs
 using System.ComponentModel.DataAnnotations;
 
 namespace TaskFlowManagement.Core.Entities
@@ -304,6 +335,9 @@ namespace TaskFlowManagement.Core.Entities
         public ICollection<TaskTag> TaskTags { get; set; } = new List<TaskTag>();
     }
 }
+
+
+### FILE: TaskItem.cs
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -434,6 +468,9 @@ namespace TaskFlowManagement.Core.Entities
         public ICollection<TaskTag> TaskTags { get; set; } = new List<TaskTag>();
     }
 }
+
+
+### FILE: TaskTag.cs
 namespace TaskFlowManagement.Core.Entities
 {
     public class TaskTag
@@ -445,6 +482,9 @@ namespace TaskFlowManagement.Core.Entities
         public Tag Tag { get; set; } = null!;
     }
 }
+
+
+### FILE: User.cs
 using System.ComponentModel.DataAnnotations;
 
 namespace TaskFlowManagement.Core.Entities
@@ -520,6 +560,9 @@ namespace TaskFlowManagement.Core.Entities
         public ICollection<Expense> CreatedExpenses { get; set; } = new List<Expense>();
     }
 }
+
+
+### FILE: UserRole.cs
 namespace TaskFlowManagement.Core.Entities
 {
     public class UserRole
@@ -531,3 +574,5 @@ namespace TaskFlowManagement.Core.Entities
         public Role Role { get; set; } = null!;
     }
 }
+
+

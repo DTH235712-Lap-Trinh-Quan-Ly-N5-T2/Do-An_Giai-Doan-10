@@ -12,7 +12,7 @@ namespace TaskFlowManagement.WinForms.Common
     /// Centralized UI theme, palette, and helper methods.
     /// Design language: Flat / Modern Dark-Header, Tailwind-inspired palette.
     /// </summary>
-    public static class UIHelper
+    public static partial class UIHelper
     {
         // ── Color Palette ─────────────────────────────────────────────────────
         // Naming follows Tailwind CSS convention for easy cross-reference
