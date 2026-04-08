@@ -12,18 +12,72 @@ namespace TaskFlowManagement.WinForms.Forms
         private Customer? _selectedCustomer;
         private readonly System.Windows.Forms.Timer _searchTimer;
 
+        // ── Constructor rỗng: CHỈ dùng cho WinForms Designer ─────────────────
+        public frmCustomers()
+        {
+            InitializeComponent();
+        }
+
+        // ── DI Constructor: dùng khi chạy thật ───────────────────────────────
         public frmCustomers(ICustomerRepository customerRepo)
         {
             _customerRepo = customerRepo;
-            InitializeComponent();
-
             _searchTimer = new System.Windows.Forms.Timer { Interval = 350 };
+
+            InitializeComponent();
+            ApplyClientStyles();
+
+            // Gắn event timer ở đây, sau khi mọi thứ đã sẵn sàng
             _searchTimer.Tick += async (s, e) =>
             {
                 _searchTimer.Stop();
                 await SearchAsync();
             };
         }
+
+        // ── Tất cả UIHelper / Lambda được tách ra khỏi Designer ──────────────
+        private void ApplyClientStyles()
+        {
+            // ── panelTop ──────────────────────────────────────────────────────
+            panelTop.BackColor = UIHelper.ColorHeaderBg;
+            panelAccentLine.BackColor = System.Drawing.Color.FromArgb(37, 99, 235);
+            lblHeader.Font = UIHelper.FontHeaderLarge;
+            lblHeader.ForeColor = UIHelper.ColorHeaderFg;
+
+            // ── panelFilter ───────────────────────────────────────────────────
+            panelFilter.BackColor = UIHelper.ColorBackground;
+            txtSearch.Font = UIHelper.FontSmall;
+            UIHelper.StyleToolButton(btnRefresh, "🔄  Làm mới", UIHelper.ButtonVariant.Secondary, 362, 10, 100, 26);
+
+            // ── panelToolbar ──────────────────────────────────────────────────
+            panelToolbar.BackColor = UIHelper.ColorSurface;
+            int bx = 12, by = 9, bg = 6, bh = 34;
+            UIHelper.StyleToolButton(btnAdd, "➕  Thêm mới", UIHelper.ButtonVariant.Primary, bx, by, 120, bh); bx += 120 + bg;
+            UIHelper.StyleToolButton(btnEdit, "✏️  Sửa", UIHelper.ButtonVariant.Success, bx, by, 90, bh); bx += 90 + bg;
+            UIHelper.StyleToolButton(btnDelete, "🗑️  Xóa", UIHelper.ButtonVariant.Danger, bx, by, 80, bh); bx += 80 + bg;
+            UIHelper.StyleToolButton(btnDetail, "📋  Xem dự án", UIHelper.ButtonVariant.Slate, bx, by, 120, bh); bx += 120 + bg;
+
+            lblCount.Font = UIHelper.FontSmall;
+            lblCount.ForeColor = UIHelper.ColorMuted;
+            lblCount.Location = new System.Drawing.Point(bx, by);
+            lblCount.Size = new System.Drawing.Size(180, bh);
+
+            // ── DataGridView ──────────────────────────────────────────────────
+            UIHelper.StyleDataGridView(dgvCustomers);
+            UIHelper.ApplyAlternateRowColors(dgvCustomers);
+
+            // ── panelStatus ───────────────────────────────────────────────────
+            panelStatus.BackColor = UIHelper.ColorHeaderBg;
+            lblStatus.Font = UIHelper.FontSmall;
+            lblStatus.ForeColor = UIHelper.ColorSubtitle;
+
+            // ── Font toàn Form ────────────────────────────────────────────────
+            this.Font = UIHelper.FontBase;
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
+        // Phần còn lại: giữ nguyên hoàn toàn
+        // ─────────────────────────────────────────────────────────────────────
 
         protected override async void OnLoad(EventArgs e)
         {
@@ -110,7 +164,6 @@ namespace TaskFlowManagement.WinForms.Forms
                 "Xác nhận xóa", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
             if (confirm != DialogResult.Yes) return;
 
-            // FIX BUG #3: Chống spam-click nút Xóa
             btnDelete.Enabled = false;
             try
             {
@@ -137,7 +190,8 @@ namespace TaskFlowManagement.WinForms.Forms
         {
             if (_selectedCustomer == null) return;
             var customer = await _customerRepo.GetWithProjectsAsync(_selectedCustomer.Id);
-            if (customer == null) { MessageBox.Show("Không tìm thấy khách hàng.", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error); return; }
+            if (customer == null)
+            { MessageBox.Show("Không tìm thấy khách hàng.", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error); return; }
 
             var count = customer.Projects?.Count ?? 0;
             if (count == 0)

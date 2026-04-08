@@ -57,131 +57,140 @@ namespace TaskFlowManagement.WinForms.Forms
             ((System.ComponentModel.ISupportInitialize)dgvExpenses).BeginInit();
             this.SuspendLayout();
 
-            // panelHeader
-            panelHeader.BackColor = UIHelper.ColorHeaderBg;
+            // ── panelHeader ────────────────────────────────────────────────────────
             panelHeader.Dock = DockStyle.Top;
             panelHeader.Height = 58;
+            panelHeader.Name = "panelHeader";
             panelHeader.Controls.Add(lblHeader);
 
             lblHeader.AutoSize = false;
-            lblHeader.Font = UIHelper.FontHeaderLarge;
-            lblHeader.ForeColor = UIHelper.ColorHeaderFg;
             lblHeader.Location = new Point(20, 14);
+            lblHeader.Name = "lblHeader";
             lblHeader.Size = new Size(700, 30);
             lblHeader.Text = "💸  Quản lý Chi phí & Ngân sách";
 
-            // panelFilter
-            panelFilter.BackColor = UIHelper.ColorBackground;
+            // ── panelFilter ────────────────────────────────────────────────────────
             panelFilter.Dock = DockStyle.Top;
             panelFilter.Height = 46;
-            panelFilter.Controls.AddRange(new Control[] { lblProjectFilter, cboProject, lblTypeFilter, cboExpenseType, btnRefresh });
+            panelFilter.Name = "panelFilter";
+            panelFilter.Controls.AddRange(new Control[]
+            { lblProjectFilter, cboProject, lblTypeFilter, cboExpenseType, btnRefresh });
 
             lblProjectFilter.AutoSize = true;
-            lblProjectFilter.Font = UIHelper.FontLabel;
             lblProjectFilter.Location = new Point(14, 15);
+            lblProjectFilter.Name = "lblProjectFilter";
             lblProjectFilter.Text = "Dự án:";
 
             cboProject.Location = new Point(65, 11);
+            cboProject.Name = "cboProject";
             cboProject.Size = new Size(220, 26);
-            UIHelper.StyleFilterCombo(cboProject);
 
             lblTypeFilter.AutoSize = true;
-            lblTypeFilter.Font = UIHelper.FontLabel;
             lblTypeFilter.Location = new Point(300, 15);
+            lblTypeFilter.Name = "lblTypeFilter";
             lblTypeFilter.Text = "Loại:";
 
             cboExpenseType.Location = new Point(340, 11);
+            cboExpenseType.Name = "cboExpenseType";
             cboExpenseType.Size = new Size(160, 26);
-            UIHelper.StyleFilterCombo(cboExpenseType);
-            cboExpenseType.Items.AddRange(new object[] { "— Tất cả —", "Nhân công", "Phần mềm", "Hạ tầng", "Khác" });
-            cboExpenseType.SelectedIndex = 0;
 
             btnRefresh.Location = new Point(515, 11);
+            btnRefresh.Name = "btnRefresh";
             btnRefresh.Size = new Size(110, 26);
-            UIHelper.StyleButton(btnRefresh, UIHelper.ButtonVariant.Secondary);
             btnRefresh.Text = "🔄 Làm mới";
 
-            // panelSummary (Budget Card)
-            panelSummary.BackColor = UIHelper.ColorBackground;
+            // ── panelSummary ───────────────────────────────────────────────────────
             panelSummary.Dock = DockStyle.Top;
             panelSummary.Height = 100;
+            panelSummary.Name = "panelSummary";
             panelSummary.Controls.Add(pnlSummaryCard);
 
-            pnlSummaryCard.BackColor = UIHelper.ColorSurface;
             pnlSummaryCard.Location = new Point(14, 10);
+            pnlSummaryCard.Name = "pnlSummaryCard";
             pnlSummaryCard.Size = new Size(970, 80);
             pnlSummaryCard.BorderStyle = BorderStyle.FixedSingle;
-            pnlSummaryCard.Controls.AddRange(new Control[] { 
-                lblUsagePct, lblRemainingVal, lblTotalExpenseVal, lblBudgetVal, 
-                lblRemainingTitle, lblTotalExpenseTitle, lblBudgetTitle 
+            pnlSummaryCard.Controls.AddRange(new Control[]
+            {
+        lblUsagePct, lblRemainingVal, lblTotalExpenseVal, lblBudgetVal,
+        lblRemainingTitle, lblTotalExpenseTitle, lblBudgetTitle
             });
 
-            lblBudgetTitle.Font = UIHelper.FontLabel;
-            lblBudgetTitle.ForeColor = UIHelper.ColorMuted;
             lblBudgetTitle.Location = new Point(20, 15);
-            lblBudgetTitle.Text = "NGÂN SÁCH";
+            lblBudgetTitle.Name = "lblBudgetTitle";
             lblBudgetTitle.Size = new Size(150, 20);
+            lblBudgetTitle.Text = "NGÂN SÁCH";
 
-            lblBudgetVal.Font = UIHelper.FontHeaderLarge;
-            lblBudgetVal.ForeColor = UIHelper.ColorPrimary;
             lblBudgetVal.Location = new Point(20, 35);
-            lblBudgetVal.Text = "0 ₫";
+            lblBudgetVal.Name = "lblBudgetVal";
             lblBudgetVal.Size = new Size(200, 30);
+            lblBudgetVal.Text = "0 ₫";
 
-            lblTotalExpenseTitle.Font = UIHelper.FontLabel;
-            lblTotalExpenseTitle.ForeColor = UIHelper.ColorMuted;
             lblTotalExpenseTitle.Location = new Point(250, 15);
-            lblTotalExpenseTitle.Text = "TỔNG CHI PHÍ";
+            lblTotalExpenseTitle.Name = "lblTotalExpenseTitle";
             lblTotalExpenseTitle.Size = new Size(150, 20);
+            lblTotalExpenseTitle.Text = "TỔNG CHI PHÍ";
 
-            lblTotalExpenseVal.Font = UIHelper.FontHeaderLarge;
-            lblTotalExpenseVal.ForeColor = UIHelper.ColorHeaderBg;
             lblTotalExpenseVal.Location = new Point(250, 35);
-            lblTotalExpenseVal.Text = "0 ₫";
+            lblTotalExpenseVal.Name = "lblTotalExpenseVal";
             lblTotalExpenseVal.Size = new Size(200, 30);
+            lblTotalExpenseVal.Text = "0 ₫";
 
-            lblRemainingTitle.Font = UIHelper.FontLabel;
-            lblRemainingTitle.ForeColor = UIHelper.ColorMuted;
             lblRemainingTitle.Location = new Point(500, 15);
-            lblRemainingTitle.Text = "CÒN LẠI";
+            lblRemainingTitle.Name = "lblRemainingTitle";
             lblRemainingTitle.Size = new Size(150, 20);
+            lblRemainingTitle.Text = "CÒN LẠI";
 
-            lblRemainingVal.Font = UIHelper.FontHeaderLarge;
-            lblRemainingVal.ForeColor = UIHelper.ColorSuccess;
             lblRemainingVal.Location = new Point(500, 35);
-            lblRemainingVal.Text = "0 ₫";
+            lblRemainingVal.Name = "lblRemainingVal";
             lblRemainingVal.Size = new Size(200, 30);
+            lblRemainingVal.Text = "0 ₫";
 
-            lblUsagePct.Font = new Font("Segoe UI", 18F, FontStyle.Bold);
-            lblUsagePct.ForeColor = UIHelper.ColorMuted;
             lblUsagePct.Location = new Point(780, 15);
-            lblUsagePct.Text = "0%";
+            lblUsagePct.Name = "lblUsagePct";
             lblUsagePct.Size = new Size(160, 50);
+            lblUsagePct.Text = "0%";
             lblUsagePct.TextAlign = ContentAlignment.MiddleRight;
 
-            // panelToolbar
-            panelToolbar.BackColor = UIHelper.ColorSurface;
+            // ── panelToolbar ───────────────────────────────────────────────────────
             panelToolbar.Dock = DockStyle.Top;
             panelToolbar.Height = 52;
-            panelToolbar.Controls.AddRange(new Control[] { btnAdd, btnEdit, btnDelete, btnDetail, lblCount });
+            panelToolbar.Name = "panelToolbar";
+            panelToolbar.Controls.AddRange(new Control[]
+            { btnAdd, btnEdit, btnDelete, btnDetail, lblCount });
 
-            int bx = 14, by = 9, bg = 6, bh = 34;
-            UIHelper.StyleToolButton(btnAdd, "➕ Thêm chi phí", UIHelper.ButtonVariant.Primary, bx, by, 140, bh); bx += 140 + bg;
-            UIHelper.StyleToolButton(btnEdit, "✏️ Sửa", UIHelper.ButtonVariant.Success, bx, by, 80, bh); bx += 80 + bg;
-            UIHelper.StyleToolButton(btnDelete, "🗑️ Xóa", UIHelper.ButtonVariant.Danger, bx, by, 80, bh); bx += 80 + bg;
-            UIHelper.StyleToolButton(btnDetail, "📋 Chi tiết", UIHelper.ButtonVariant.Slate, bx, by, 100, bh); bx += 100 + bg;
+            btnAdd.Location = new Point(14, 9);
+            btnAdd.Name = "btnAdd";
+            btnAdd.Size = new Size(140, 34);
+            btnAdd.Text = "➕ Thêm chi phí";
+
+            btnEdit.Location = new Point(160, 9);
+            btnEdit.Name = "btnEdit";
+            btnEdit.Size = new Size(80, 34);
+            btnEdit.Text = "✏️ Sửa";
+            btnEdit.Enabled = false;
+
+            btnDelete.Location = new Point(246, 9);
+            btnDelete.Name = "btnDelete";
+            btnDelete.Size = new Size(80, 34);
+            btnDelete.Text = "🗑️ Xóa";
+            btnDelete.Enabled = false;
+
+            btnDetail.Location = new Point(332, 9);
+            btnDetail.Name = "btnDetail";
+            btnDetail.Size = new Size(100, 34);
+            btnDetail.Text = "📋 Chi tiết";
+            btnDetail.Enabled = false;
 
             lblCount.AutoSize = false;
-            lblCount.Font = UIHelper.FontSmall;
-            lblCount.ForeColor = UIHelper.ColorMuted;
-            lblCount.Location = new Point(bx, by);
-            lblCount.Size = new Size(200, bh);
+            lblCount.Location = new Point(444, 9);
+            lblCount.Name = "lblCount";
+            lblCount.Size = new Size(200, 34);
             lblCount.TextAlign = ContentAlignment.MiddleLeft;
 
-            // dgvExpenses
-            UIHelper.StyleDataGridView(dgvExpenses);
-            UIHelper.ApplyAlternateRowColors(dgvExpenses);
+            // ── dgvExpenses ────────────────────────────────────────────────────────
             dgvExpenses.Dock = DockStyle.Fill;
+            dgvExpenses.Name = "dgvExpenses";
+            dgvExpenses.RowTemplate.Height = 34;
 
             colId.Name = "colId"; colId.Visible = false;
             colProject.Name = "colProject"; colProject.HeaderText = "Dự án"; colProject.Width = 180;
@@ -189,19 +198,34 @@ namespace TaskFlowManagement.WinForms.Forms
             colAmount.Name = "colAmount"; colAmount.HeaderText = "Số tiền"; colAmount.Width = 140;
             colDate.Name = "colDate"; colDate.HeaderText = "Ngày"; colDate.Width = 100;
             colNote.Name = "colNote"; colNote.HeaderText = "Ghi chú"; colNote.Width = 250;
-            colCreatedBy.Name = "colCreatedBy"; colCreatedBy.HeaderText = "Người tạo"; colCreatedBy.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+            colCreatedBy.Name = "colCreatedBy"; colCreatedBy.HeaderText = "Người tạo";
+            colCreatedBy.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
 
-            dgvExpenses.Columns.AddRange(new DataGridViewColumn[] { colId, colProject, colType, colAmount, colDate, colNote, colCreatedBy });
+            dgvExpenses.Columns.AddRange(new DataGridViewColumn[]
+            { colId, colProject, colType, colAmount, colDate, colNote, colCreatedBy });
 
-            // Status Bar
-            (panelStatus, lblStatus) = UIHelper.CreateStatusBar();
+            // ── panelStatus (placeholder — được tạo lại bởi UIHelper.CreateStatusBar) ──
+            panelStatus.Dock = DockStyle.Bottom;
+            panelStatus.Height = 28;
+            panelStatus.Name = "panelStatus";
+            panelStatus.Controls.Add(lblStatus);
 
-            // Form properties
+            lblStatus.AutoSize = false;
+            lblStatus.Dock = DockStyle.Fill;
+            lblStatus.Name = "lblStatus";
+            lblStatus.Padding = new Padding(12, 0, 0, 0);
+            lblStatus.Text = "";
+            lblStatus.TextAlign = ContentAlignment.MiddleLeft;
+
+            // ── Form ───────────────────────────────────────────────────────────────
+            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
+            this.AutoScaleMode = AutoScaleMode.Font;
             this.ClientSize = new Size(1000, 700);
             this.Name = "frmExpenses";
             this.Text = "Quản lý Chi phí & Ngân sách";
             this.StartPosition = FormStartPosition.CenterParent;
 
+            // Thứ tự Add: Fill → Bottom → Top (ngược chiều Dock)
             this.Controls.Add(dgvExpenses);
             this.Controls.Add(panelStatus);
             this.Controls.Add(panelToolbar);

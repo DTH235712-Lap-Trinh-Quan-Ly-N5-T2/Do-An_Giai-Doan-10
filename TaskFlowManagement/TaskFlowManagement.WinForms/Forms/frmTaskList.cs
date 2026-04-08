@@ -61,7 +61,51 @@ namespace TaskFlowManagement.WinForms.Forms
         public frmTaskList()
         {
             InitializeComponent();
+            ApplyClientStyles();
             _debounceTimer.Tick += DebounceTimer_Tick;
+        }
+
+        private void ApplyClientStyles()
+        {
+            // ── panelHeader ───────────────────────────────────────────────────────
+            panelHeader.BackColor = UIHelper.ColorHeaderBg;
+            lblHeader.Font = UIHelper.FontHeaderLarge;
+            lblHeader.ForeColor = UIHelper.ColorHeaderFg;
+
+            // ── panelTop ──────────────────────────────────────────────────────────
+            panelTop.BackColor = UIHelper.ColorBackground;
+            txtSearch.Font = UIHelper.FontSmall;
+            cboProjectFilter.Font = UIHelper.FontSmall;
+            cboStatusFilter.Font = UIHelper.FontSmall;
+
+            int bx = 584, by = 11, bh = 30, bg = 6;
+            UIHelper.StyleToolButton(btnAddNew, "➕ Thêm mới", UIHelper.ButtonVariant.Primary, bx, by, 100, bh); bx += 100 + bg;
+            UIHelper.StyleToolButton(btnEdit, "✏️  Sửa", UIHelper.ButtonVariant.Success, bx, by, 80, bh); bx += 80 + bg;
+            UIHelper.StyleToolButton(btnDelete, "🗑️  Xóa", UIHelper.ButtonVariant.Danger, bx, by, 80, bh); bx += 80 + bg;
+            UIHelper.StyleToolButton(btnRefresh, "🔄 Làm mới", UIHelper.ButtonVariant.Secondary, bx, by, 90, bh); bx += 90 + bg;
+
+            lblCount.Font = UIHelper.FontSmall;
+            lblCount.ForeColor = UIHelper.ColorMuted;
+            lblCount.Location = new Point(bx, by + 4);
+
+            // ── DataGridView ──────────────────────────────────────────────────────
+            UIHelper.StyleDataGridView(dgvTasks);
+            UIHelper.ApplyAlternateRowColors(dgvTasks);
+            colProgress.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+
+            // ── panelBottom ───────────────────────────────────────────────────────
+            panelBottom.BackColor = UIHelper.ColorHeaderBg;
+            panelPaging.BackColor = UIHelper.ColorHeaderBg;
+            lblStatus.Font = UIHelper.FontSmall;
+            lblStatus.ForeColor = UIHelper.ColorSubtitle;
+            lblPage.Font = UIHelper.FontSmall;
+            lblPage.ForeColor = UIHelper.ColorSubtitle;
+
+            UIHelper.StyleButton(btnPrev, UIHelper.ButtonVariant.Secondary);
+            btnPrev.Font = UIHelper.FontSmall;
+
+            UIHelper.StyleButton(btnNext, UIHelper.ButtonVariant.Secondary);
+            btnNext.Font = UIHelper.FontSmall;
         }
 
         /// <summary>

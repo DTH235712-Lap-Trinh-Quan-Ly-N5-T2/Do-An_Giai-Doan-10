@@ -14,27 +14,19 @@ namespace TaskFlowManagement.WinForms.Forms
 
         private void InitializeComponent()
         {
-            // ── Instantiation ─────────────────────────────────────────────────
             panelTop = new Panel();
-            panelAccentLine = new Panel();
             lblHeader = new Label();
-
+            panelAccentLine = new Panel();
             panelFilter = new Panel();
             txtSearch = new TextBox();
             btnRefresh = new Button();
-
             panelToolbar = new Panel();
             btnAdd = new Button();
             btnEdit = new Button();
             btnDelete = new Button();
             btnDetail = new Button();
             lblCount = new Label();
-
             dgvCustomers = new DataGridView();
-
-            panelStatus = new Panel();
-            lblStatus = new Label();
-
             colCustId = new DataGridViewTextBoxColumn();
             colCompany = new DataGridViewTextBoxColumn();
             colContact = new DataGridViewTextBoxColumn();
@@ -42,157 +34,251 @@ namespace TaskFlowManagement.WinForms.Forms
             colCustPhone = new DataGridViewTextBoxColumn();
             colAddress = new DataGridViewTextBoxColumn();
             colCreatedAt = new DataGridViewTextBoxColumn();
-
+            panelStatus = new Panel();
+            lblStatus = new Label();
             panelTop.SuspendLayout();
             panelFilter.SuspendLayout();
             panelToolbar.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)dgvCustomers).BeginInit();
-            this.SuspendLayout();
-
-            // ════════════════════════════════════════════════════
-            // panelTop — Dark header + accent line
-            // SỬA: height 52→58, thêm panelAccentLine
-            // ════════════════════════════════════════════════════
-            panelTop.BackColor = UIHelper.ColorHeaderBg;
-            panelTop.Dock = DockStyle.Top;
-            panelTop.Height = 58;
-            panelTop.Name = "panelTop";
+            panelStatus.SuspendLayout();
+            SuspendLayout();
+            // 
+            // panelTop
+            // 
             panelTop.Controls.Add(lblHeader);
             panelTop.Controls.Add(panelAccentLine);
-
-            panelAccentLine.BackColor = System.Drawing.Color.FromArgb(37, 99, 235);
-            panelAccentLine.Dock = DockStyle.Bottom;
-            panelAccentLine.Height = 4;
-            panelAccentLine.Name = "panelAccentLine";
-
-            lblHeader.AutoSize = false;
+            panelTop.Dock = DockStyle.Top;
+            panelTop.Location = new Point(0, 0);
+            panelTop.Margin = new Padding(4, 4, 4, 4);
+            panelTop.Name = "panelTop";
+            panelTop.Size = new Size(1286, 81);
+            panelTop.TabIndex = 4;
+            // 
+            // lblHeader
+            // 
             lblHeader.Dock = DockStyle.Fill;
-            lblHeader.Font = UIHelper.FontHeaderLarge;
-            lblHeader.ForeColor = UIHelper.ColorHeaderFg;
+            lblHeader.Location = new Point(0, 0);
+            lblHeader.Margin = new Padding(4, 0, 4, 0);
             lblHeader.Name = "lblHeader";
-            lblHeader.Padding = new Padding(16, 0, 0, 4);
+            lblHeader.Padding = new Padding(21, 0, 0, 6);
+            lblHeader.Size = new Size(1286, 75);
+            lblHeader.TabIndex = 0;
             lblHeader.Text = "🏢  Quản lý Khách hàng";
-            lblHeader.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-
-            // ════════════════════════════════════════════════════
-            // panelFilter — Search + Refresh
-            // SỬA: hard-code #F8FAFC → UIHelper.ColorBackground
-            // ════════════════════════════════════════════════════
-            panelFilter.BackColor = UIHelper.ColorBackground;
+            lblHeader.TextAlign = ContentAlignment.MiddleLeft;
+            // 
+            // panelAccentLine
+            // 
+            panelAccentLine.Dock = DockStyle.Bottom;
+            panelAccentLine.Location = new Point(0, 75);
+            panelAccentLine.Margin = new Padding(4, 4, 4, 4);
+            panelAccentLine.Name = "panelAccentLine";
+            panelAccentLine.Size = new Size(1286, 6);
+            panelAccentLine.TabIndex = 1;
+            // 
+            // panelFilter
+            // 
+            panelFilter.Controls.Add(txtSearch);
+            panelFilter.Controls.Add(btnRefresh);
             panelFilter.Dock = DockStyle.Top;
-            panelFilter.Height = 46;
+            panelFilter.Location = new Point(0, 81);
+            panelFilter.Margin = new Padding(4, 4, 4, 4);
             panelFilter.Name = "panelFilter";
-            panelFilter.Controls.AddRange(new Control[] { txtSearch, btnRefresh });
-
-            txtSearch.Font = UIHelper.FontSmall;
-            txtSearch.Location = new System.Drawing.Point(12, 10);
+            panelFilter.Size = new Size(1286, 64);
+            panelFilter.TabIndex = 3;
+            // 
+            // txtSearch
+            // 
+            txtSearch.Location = new Point(15, 14);
+            txtSearch.Margin = new Padding(4, 4, 4, 4);
             txtSearch.Name = "txtSearch";
             txtSearch.PlaceholderText = "🔍  Tìm theo tên công ty, liên hệ, email...";
-            txtSearch.Size = new System.Drawing.Size(340, 26);
+            txtSearch.Size = new Size(436, 29);
+            txtSearch.TabIndex = 0;
             txtSearch.TextChanged += txtSearch_TextChanged;
-
-            // SỬA: icon-only 36px → text đầy đủ với UIHelper
-            UIHelper.StyleToolButton(btnRefresh, "🔄  Làm mới", UIHelper.ButtonVariant.Secondary, 362, 10, 100, 26);
+            // 
+            // btnRefresh
+            // 
+            btnRefresh.Location = new Point(465, 14);
+            btnRefresh.Margin = new Padding(4, 4, 4, 4);
             btnRefresh.Name = "btnRefresh";
+            btnRefresh.Size = new Size(129, 36);
+            btnRefresh.TabIndex = 1;
+            btnRefresh.Text = "🔄  Làm mới";
             btnRefresh.Click += btnRefresh_Click;
-
-            // ════════════════════════════════════════════════════
-            // panelToolbar — CRUD buttons
-            // SỬA: White bg → UIHelper.ColorSurface; tất cả btn hard-code → UIHelper
-            // ════════════════════════════════════════════════════
-            panelToolbar.BackColor = UIHelper.ColorSurface;
+            // 
+            // panelToolbar
+            // 
+            panelToolbar.Controls.Add(btnAdd);
+            panelToolbar.Controls.Add(btnEdit);
+            panelToolbar.Controls.Add(btnDelete);
+            panelToolbar.Controls.Add(btnDetail);
+            panelToolbar.Controls.Add(lblCount);
             panelToolbar.Dock = DockStyle.Top;
-            panelToolbar.Height = 52;
+            panelToolbar.Location = new Point(0, 145);
+            panelToolbar.Margin = new Padding(4, 4, 4, 4);
             panelToolbar.Name = "panelToolbar";
-            panelToolbar.Controls.AddRange(new Control[]
-            { btnAdd, btnEdit, btnDelete, btnDetail, lblCount });
-
-            int bx = 12, by = 9, bg = 6, bh = 34;
-            UIHelper.StyleToolButton(btnAdd, "➕  Thêm mới", UIHelper.ButtonVariant.Primary, bx, by, 120, bh); bx += 120 + bg;
-            UIHelper.StyleToolButton(btnEdit, "✏️  Sửa", UIHelper.ButtonVariant.Success, bx, by, 90, bh); bx += 90 + bg;
-            UIHelper.StyleToolButton(btnDelete, "🗑️  Xóa", UIHelper.ButtonVariant.Danger, bx, by, 80, bh); bx += 80 + bg;
-            UIHelper.StyleToolButton(btnDetail, "📋  Xem dự án", UIHelper.ButtonVariant.Slate, bx, by, 120, bh); bx += 120 + bg;
-
-            btnAdd.Name = "btnAdd"; btnAdd.Click += btnAdd_Click;
-            btnEdit.Name = "btnEdit"; btnEdit.Click += btnEdit_Click;
-            btnDelete.Name = "btnDelete"; btnDelete.Click += btnDelete_Click;
-            btnDetail.Name = "btnDetail"; btnDetail.Click += btnDetail_Click;
-
-            btnEdit.Enabled = btnDelete.Enabled = btnDetail.Enabled = false;
-
-            lblCount.AutoSize = false;
-            lblCount.Font = UIHelper.FontSmall;
-            lblCount.ForeColor = UIHelper.ColorMuted;
-            lblCount.Location = new System.Drawing.Point(bx, by);
+            panelToolbar.Size = new Size(1286, 73);
+            panelToolbar.TabIndex = 2;
+            // 
+            // btnAdd
+            // 
+            btnAdd.Location = new Point(15, 13);
+            btnAdd.Margin = new Padding(4, 4, 4, 4);
+            btnAdd.Name = "btnAdd";
+            btnAdd.Size = new Size(154, 48);
+            btnAdd.TabIndex = 0;
+            btnAdd.Text = "➕  Thêm mới";
+            btnAdd.Click += btnAdd_Click;
+            // 
+            // btnEdit
+            // 
+            btnEdit.Enabled = false;
+            btnEdit.Location = new Point(177, 13);
+            btnEdit.Margin = new Padding(4, 4, 4, 4);
+            btnEdit.Name = "btnEdit";
+            btnEdit.Size = new Size(116, 48);
+            btnEdit.TabIndex = 1;
+            btnEdit.Text = "✏️  Sửa";
+            btnEdit.Click += btnEdit_Click;
+            // 
+            // btnDelete
+            // 
+            btnDelete.Enabled = false;
+            btnDelete.Location = new Point(301, 13);
+            btnDelete.Margin = new Padding(4, 4, 4, 4);
+            btnDelete.Name = "btnDelete";
+            btnDelete.Size = new Size(103, 48);
+            btnDelete.TabIndex = 2;
+            btnDelete.Text = "🗑️  Xóa";
+            btnDelete.Click += btnDelete_Click;
+            // 
+            // btnDetail
+            // 
+            btnDetail.Enabled = false;
+            btnDetail.Location = new Point(411, 13);
+            btnDetail.Margin = new Padding(4, 4, 4, 4);
+            btnDetail.Name = "btnDetail";
+            btnDetail.Size = new Size(235, 48);
+            btnDetail.TabIndex = 3;
+            btnDetail.Text = "📋  Xem dự án";
+            btnDetail.Click += btnDetail_Click;
+            // 
+            // lblCount
+            // 
+            lblCount.Location = new Point(573, 13);
+            lblCount.Margin = new Padding(4, 0, 4, 0);
             lblCount.Name = "lblCount";
-            lblCount.Size = new System.Drawing.Size(180, bh);
-            lblCount.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-
-            // ════════════════════════════════════════════════════
-            // dgvCustomers — DataGridView
-            // SỬA: Toàn bộ hard-code → UIHelper.StyleDataGridView()
-            // ════════════════════════════════════════════════════
-            UIHelper.StyleDataGridView(dgvCustomers);
-            UIHelper.ApplyAlternateRowColors(dgvCustomers);
+            lblCount.Size = new Size(231, 48);
+            lblCount.TabIndex = 4;
+            lblCount.TextAlign = ContentAlignment.MiddleLeft;
+            // 
+            // dgvCustomers
+            // 
+            dgvCustomers.ColumnHeadersHeight = 29;
+            dgvCustomers.Columns.AddRange(new DataGridViewColumn[] { colCustId, colCompany, colContact, colCustEmail, colCustPhone, colAddress, colCreatedAt });
             dgvCustomers.Dock = DockStyle.Fill;
+            dgvCustomers.Location = new Point(0, 218);
+            dgvCustomers.Margin = new Padding(4, 4, 4, 4);
             dgvCustomers.Name = "dgvCustomers";
+            dgvCustomers.RowHeadersWidth = 51;
             dgvCustomers.RowTemplate.Height = 34;
-            dgvCustomers.SelectionChanged += dgvCustomers_SelectionChanged;
+            dgvCustomers.Size = new Size(1286, 611);
+            dgvCustomers.TabIndex = 0;
             dgvCustomers.CellDoubleClick += dgvCustomers_CellDoubleClick;
-
-            colCustId.Name = "colCustId"; colCustId.HeaderText = "ID"; colCustId.Width = 45; colCustId.Visible = false;
-            colCompany.Name = "colCompany"; colCompany.HeaderText = "Tên công ty"; colCompany.Width = 220;
-            colContact.Name = "colContact"; colContact.HeaderText = "Người liên hệ"; colContact.Width = 160;
-            colCustEmail.Name = "colCustEmail"; colCustEmail.HeaderText = "Email"; colCustEmail.Width = 190;
-            colCustPhone.Name = "colCustPhone"; colCustPhone.HeaderText = "Điện thoại"; colCustPhone.Width = 120;
-            colAddress.Name = "colAddress"; colAddress.HeaderText = "Địa chỉ"; colAddress.Width = 200;
-            colCreatedAt.Name = "colCreatedAt"; colCreatedAt.HeaderText = "Ngày tạo"; colCreatedAt.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
-
-            dgvCustomers.Columns.AddRange(new DataGridViewColumn[]
-            { colCustId, colCompany, colContact, colCustEmail, colCustPhone, colAddress, colCreatedAt });
-
-            // ════════════════════════════════════════════════════
-            // panelStatus — Status bar
-            // ════════════════════════════════════════════════════
-            panelStatus.BackColor = UIHelper.ColorHeaderBg;
-            panelStatus.Dock = DockStyle.Bottom;
-            panelStatus.Height = 28;
-            panelStatus.Name = "panelStatus";
+            dgvCustomers.SelectionChanged += dgvCustomers_SelectionChanged;
+            // 
+            // colCustId
+            // 
+            colCustId.HeaderText = "ID";
+            colCustId.MinimumWidth = 6;
+            colCustId.Name = "colCustId";
+            colCustId.Visible = false;
+            colCustId.Width = 45;
+            // 
+            // colCompany
+            // 
+            colCompany.HeaderText = "Tên công ty";
+            colCompany.MinimumWidth = 6;
+            colCompany.Name = "colCompany";
+            colCompany.Width = 220;
+            // 
+            // colContact
+            // 
+            colContact.HeaderText = "Người liên hệ";
+            colContact.MinimumWidth = 6;
+            colContact.Name = "colContact";
+            colContact.Width = 160;
+            // 
+            // colCustEmail
+            // 
+            colCustEmail.HeaderText = "Email";
+            colCustEmail.MinimumWidth = 6;
+            colCustEmail.Name = "colCustEmail";
+            colCustEmail.Width = 190;
+            // 
+            // colCustPhone
+            // 
+            colCustPhone.HeaderText = "Điện thoại";
+            colCustPhone.MinimumWidth = 6;
+            colCustPhone.Name = "colCustPhone";
+            colCustPhone.Width = 120;
+            // 
+            // colAddress
+            // 
+            colAddress.HeaderText = "Địa chỉ";
+            colAddress.MinimumWidth = 6;
+            colAddress.Name = "colAddress";
+            colAddress.Width = 200;
+            // 
+            // colCreatedAt
+            // 
+            colCreatedAt.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+            colCreatedAt.HeaderText = "Ngày tạo";
+            colCreatedAt.MinimumWidth = 6;
+            colCreatedAt.Name = "colCreatedAt";
+            // 
+            // panelStatus
+            // 
             panelStatus.Controls.Add(lblStatus);
-
-            lblStatus.AutoSize = false;
+            panelStatus.Dock = DockStyle.Bottom;
+            panelStatus.Location = new Point(0, 829);
+            panelStatus.Margin = new Padding(4, 4, 4, 4);
+            panelStatus.Name = "panelStatus";
+            panelStatus.Size = new Size(1286, 39);
+            panelStatus.TabIndex = 1;
+            // 
+            // lblStatus
+            // 
             lblStatus.Dock = DockStyle.Fill;
-            lblStatus.Font = UIHelper.FontSmall;
-            lblStatus.ForeColor = UIHelper.ColorSubtitle;
+            lblStatus.Location = new Point(0, 0);
+            lblStatus.Margin = new Padding(4, 0, 4, 0);
             lblStatus.Name = "lblStatus";
-            lblStatus.Padding = new Padding(12, 0, 0, 0);
-            lblStatus.Text = "";
-            lblStatus.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-
-            // ════════════════════════════════════════════════════
-            // Form
-            // ════════════════════════════════════════════════════
-            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
-            this.AutoScaleMode = AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1000, 620);
-            this.Font = UIHelper.FontBase;
-            this.Name = "frmCustomers";
-            this.Text = "🏢  Quản lý Khách hàng";
-            this.StartPosition = FormStartPosition.Manual;
-
-            // Thứ tự Add: Fill → Bottom → Top (ngược chiều Dock)
-            this.Controls.Add(dgvCustomers);
-            this.Controls.Add(panelStatus);
-            this.Controls.Add(panelToolbar);
-            this.Controls.Add(panelFilter);
-            this.Controls.Add(panelTop);
-
+            lblStatus.Padding = new Padding(15, 0, 0, 0);
+            lblStatus.Size = new Size(1286, 39);
+            lblStatus.TabIndex = 0;
+            lblStatus.TextAlign = ContentAlignment.MiddleLeft;
+            // 
+            // frmCustomers
+            // 
+            AutoScaleDimensions = new SizeF(9F, 21F);
+            AutoScaleMode = AutoScaleMode.Font;
+            ClientSize = new Size(1286, 868);
+            Controls.Add(dgvCustomers);
+            Controls.Add(panelStatus);
+            Controls.Add(panelToolbar);
+            Controls.Add(panelFilter);
+            Controls.Add(panelTop);
+            Margin = new Padding(5, 6, 5, 6);
+            Name = "frmCustomers";
+            StartPosition = FormStartPosition.Manual;
+            Text = "🏢  Quản lý Khách hàng";
             panelTop.ResumeLayout(false);
             panelFilter.ResumeLayout(false);
             panelFilter.PerformLayout();
             panelToolbar.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)dgvCustomers).EndInit();
-            this.ResumeLayout(false);
+            panelStatus.ResumeLayout(false);
+            ResumeLayout(false);
         }
 
         // ── Field declarations ────────────────────────────────────────────────

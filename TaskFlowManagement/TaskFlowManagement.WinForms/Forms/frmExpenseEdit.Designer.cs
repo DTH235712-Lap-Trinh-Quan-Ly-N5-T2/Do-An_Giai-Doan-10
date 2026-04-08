@@ -41,99 +41,77 @@ namespace TaskFlowManagement.WinForms.Forms
             panelFooter.SuspendLayout();
             this.SuspendLayout();
 
-            // panelHeader
-            panelHeader.BackColor = UIHelper.ColorHeaderBg;
+            // ── panelHeader ────────────────────────────────────────────────────────
             panelHeader.Dock = DockStyle.Top;
             panelHeader.Height = 64;
+            panelHeader.Name = "panelHeader";
             panelHeader.Controls.Add(lblTitleForm);
             panelHeader.Controls.Add(panelAccentLine);
 
             lblTitleForm.AutoSize = false;
             lblTitleForm.Dock = DockStyle.Fill;
-            lblTitleForm.Font = new Font("Segoe UI", 13F, FontStyle.Bold);
-            lblTitleForm.ForeColor = UIHelper.ColorHeaderFg;
+            lblTitleForm.Name = "lblTitleForm";
             lblTitleForm.Padding = new Padding(18, 0, 0, 4);
             lblTitleForm.Text = "➕  Thêm chi phí mới";
             lblTitleForm.TextAlign = ContentAlignment.MiddleLeft;
 
-            panelAccentLine.BackColor = UIHelper.ColorPrimary;
             panelAccentLine.Dock = DockStyle.Bottom;
             panelAccentLine.Height = 4;
+            panelAccentLine.Name = "panelAccentLine";
 
-            // panelBody
-            panelBody.BackColor = UIHelper.ColorBackground;
+            // ── panelBody ──────────────────────────────────────────────────────────
             panelBody.Dock = DockStyle.Fill;
+            panelBody.Name = "panelBody";
             panelBody.Padding = new Padding(20);
             panelBody.Controls.AddRange(new Control[] {
-                lblProject, cboProject, lblType, cboType,
-                lblAmount, numAmount, lblDate, dtpDate,
-                lblNote, txtNote
-            });
+        lblProject, cboProject, lblType, cboType,
+        lblAmount, numAmount, lblDate, dtpDate,
+        lblNote, txtNote
+    });
 
-            int y = 20, gap = 60, lx = 20, tw = 360;
+            lblProject.Name = "lblProject";
+            cboProject.Name = "cboProject";
+            lblType.Name = "lblType";
+            cboType.Name = "cboType";
 
-            SetLabel(lblProject, "DỰ ÁN *", lx, y);
-            StyleCombo(cboProject, lx, y + 20, tw, 1);
+            numAmount.Name = "numAmount";
+            numAmount.Maximum = 999999999999M;
 
-            y += gap;
-            SetLabel(lblType, "LOẠI CHI PHÍ *", lx, y);
-            StyleCombo(cboType, lx, y + 20, tw, 2);
-            cboType.Items.AddRange(new object[] { "Nhân công", "Phần mềm", "Hạ tầng", "Khác" });
-
-            y += gap;
-            SetLabel(lblAmount, "SỐ TIỀN (VNĐ) *", lx, y);
-            numAmount.Location = new Point(lx, y + 20);
-            numAmount.Size = new Size( tw, 30);
-            numAmount.Maximum = 999999999999;
-            numAmount.ThousandsSeparator = true;
-            numAmount.Font = UIHelper.FontBase;
-            numAmount.TabIndex = 3;
-
-            y += gap;
-            SetLabel(lblDate, "NGÀY PHÁT SINH", lx, y);
-            dtpDate.Location = new Point(lx, y + 20);
-            dtpDate.Size = new Size(tw, 30);
+            dtpDate.Name = "dtpDate";
             dtpDate.Format = DateTimePickerFormat.Short;
-            dtpDate.Font = UIHelper.FontBase;
-            dtpDate.TabIndex = 4;
 
-            y += gap;
-            SetLabel(lblNote, "GHI CHÚ", lx, y);
-            txtNote.Location = new Point(lx, y + 20);
-            txtNote.Size = new Size(tw, 80);
+            lblNote.Name = "lblNote";
+            txtNote.Name = "txtNote";
             txtNote.Multiline = true;
-            txtNote.Font = UIHelper.FontBase;
-            txtNote.BorderStyle = BorderStyle.FixedSingle;
-            txtNote.PlaceholderText = "Nhập ghi chú (nếu có)...";
-            txtNote.TabIndex = 5;
 
-            // panelFooter
-            panelFooter.BackColor = Color.White;
+            // ── panelFooter ────────────────────────────────────────────────────────
             panelFooter.Dock = DockStyle.Bottom;
             panelFooter.Height = 80;
+            panelFooter.Name = "panelFooter";
             panelFooter.Controls.AddRange(new Control[] { panelFooterLine, lblError, btnSave, btnCancel });
 
-            panelFooterLine.BackColor = UIHelper.ColorBorderLight;
             panelFooterLine.Dock = DockStyle.Top;
             panelFooterLine.Height = 1;
+            panelFooterLine.Name = "panelFooterLine";
 
-            lblError.ForeColor = UIHelper.ColorDanger;
-            lblError.Font = UIHelper.FontSmall;
             lblError.Location = new Point(20, 6);
+            lblError.Name = "lblError";
             lblError.Size = new Size(400, 20);
             lblError.Text = "";
 
-            UIHelper.StyleButton(btnSave, UIHelper.ButtonVariant.Primary);
             btnSave.Location = new Point(20, 28);
+            btnSave.Name = "btnSave";
             btnSave.Size = new Size(250, 40);
             btnSave.Text = "💾  Lưu chi phí";
 
-            UIHelper.StyleButton(btnCancel, UIHelper.ButtonVariant.Secondary);
             btnCancel.Location = new Point(280, 28);
+            btnCancel.Name = "btnCancel";
             btnCancel.Size = new Size(100, 40);
             btnCancel.Text = "Hủy";
 
-            // Form
+            // ── Form ───────────────────────────────────────────────────────────────
+            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
+            this.AutoScaleMode = AutoScaleMode.Font;
             this.ClientSize = new Size(420, 520);
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;

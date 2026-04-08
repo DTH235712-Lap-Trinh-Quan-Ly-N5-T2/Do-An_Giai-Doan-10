@@ -49,7 +49,141 @@ namespace TaskFlowManagement.WinForms.Forms
         public frmKanban()
         {
             InitializeComponent();
+            ApplyClientStyles();   // ← thêm dòng này
             InitializeForm();
+        }
+
+        private void ApplyClientStyles()
+        {
+            this.BackColor = UIHelper.ColorBackground;
+
+            // ── panelHeader ───────────────────────────────────────────────────────
+            panelHeader.BackColor = UIHelper.ColorHeaderBg;
+            panelAccentLine.BackColor = System.Drawing.Color.FromArgb(37, 99, 235);
+            lblHeader.Font = UIHelper.FontHeaderLarge;
+            lblHeader.ForeColor = UIHelper.ColorHeaderFg;
+
+            // ── panelFilter ───────────────────────────────────────────────────────
+            panelFilter.BackColor = UIHelper.ColorBackground;
+
+            UIHelper.StyleToolButton(btnRefresh, "🔄  Làm mới", UIHelper.ButtonVariant.Secondary, 12, 10, 110, 30);
+            UIHelper.StyleToolButton(btnFilterAll, "Tất cả", UIHelper.ButtonVariant.Primary, 132, 10, 80, 30);
+            UIHelper.StyleToolButton(btnFilterMine, "👤  Của tôi", UIHelper.ButtonVariant.Secondary, 222, 10, 100, 30);
+            UIHelper.StyleToolButton(btnFilterOverdue, "⚠  Quá hạn", UIHelper.ButtonVariant.Secondary, 332, 10, 100, 30);
+
+            lblFilterHint.Font = UIHelper.FontSmall;
+            lblFilterHint.ForeColor = UIHelper.ColorMuted;
+
+            // ── panelToast ────────────────────────────────────────────────────────
+            panelToast.BackColor = UIHelper.ColorSuccess;
+            lblToast.Font = UIHelper.FontBold;
+
+            // ── panelStatus ───────────────────────────────────────────────────────
+            panelStatus.BackColor = UIHelper.ColorHeaderBg;
+            lblStatus.Font = UIHelper.FontSmall;
+            lblStatus.ForeColor = UIHelper.ColorSubtitle;
+
+            // ── tlpBoard — loop không được phép trong Designer ────────────────────
+            tlpBoard.BackColor = UIHelper.ColorBackground;
+            tlpBoard.ColumnStyles.Clear();
+            for (int i = 0; i < 6; i++)
+                tlpBoard.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f / 6));
+
+            // ── Build 6 cột Kanban ────────────────────────────────────────────────
+            BuildColumn(pnlTodo, lblTodo, flpTodo, lblBadgeTodo,
+                "📋  To Do",
+                System.Drawing.Color.FromArgb(226, 232, 240),
+                System.Drawing.Color.FromArgb(51, 65, 85),
+                System.Drawing.Color.FromArgb(248, 250, 252));
+
+            BuildColumn(pnlInProgress, lblInProgress, flpInProgress, lblBadgeInProgress,
+                "🔄  In Progress",
+                System.Drawing.Color.FromArgb(191, 219, 254),
+                System.Drawing.Color.FromArgb(30, 58, 138),
+                System.Drawing.Color.FromArgb(239, 246, 255));
+
+            BuildColumn(pnlReview, lblReview, flpReview, lblBadgeReview,
+                "🔍  Review",
+                System.Drawing.Color.FromArgb(253, 230, 138),
+                System.Drawing.Color.FromArgb(120, 53, 15),
+                System.Drawing.Color.FromArgb(255, 251, 235));
+
+            BuildColumn(pnlTesting, lblTesting, flpTesting, lblBadgeTesting,
+                "🧪  Testing",
+                System.Drawing.Color.FromArgb(221, 214, 254),
+                System.Drawing.Color.FromArgb(76, 29, 149),
+                System.Drawing.Color.FromArgb(245, 243, 255));
+
+            BuildColumn(pnlFailed, lblFailed, flpFailed, lblBadgeFailed,
+                "❌  Failed",
+                System.Drawing.Color.FromArgb(254, 202, 202),
+                System.Drawing.Color.FromArgb(127, 29, 29),
+                System.Drawing.Color.FromArgb(254, 242, 242));
+
+            BuildColumn(pnlDone, lblDone, flpDone, lblBadgeDone,
+                "✅  Done",
+                System.Drawing.Color.FromArgb(167, 243, 208),
+                System.Drawing.Color.FromArgb(6, 78, 59),
+                System.Drawing.Color.FromArgb(236, 253, 245));
+        }
+
+        private void BuildColumn(
+            Panel pnlColumn,
+            Label lblColName,
+            DoubleBufferedFlowLayoutPanel flp,
+            Label lblBadge,
+            string text,
+            System.Drawing.Color headerBg,
+            System.Drawing.Color headerFg,
+            System.Drawing.Color bodyBg)
+        {
+            pnlColumn.BackColor = bodyBg;
+            pnlColumn.Padding = new Padding(0);
+
+            // Header panel
+            var pnlColHeader = new Panel
+            {
+                BackColor = headerBg,
+                Dock = DockStyle.Top,
+                Height = 44,
+                Name = "pnlColHeader"
+            };
+
+            lblColName.AutoSize = false;
+            lblColName.BackColor = System.Drawing.Color.Transparent;
+            lblColName.Dock = DockStyle.Fill;
+            lblColName.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
+            lblColName.ForeColor = headerFg;
+            lblColName.Padding = new Padding(10, 0, 40, 0);
+            lblColName.Text = text;
+            lblColName.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+
+            lblBadge.AutoSize = false;
+            lblBadge.BackColor = System.Drawing.Color.FromArgb(80, 0, 0, 0);
+            lblBadge.ForeColor = System.Drawing.Color.White;
+            lblBadge.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
+            lblBadge.Location = new System.Drawing.Point(0, 12);
+            lblBadge.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            lblBadge.Size = new System.Drawing.Size(30, 20);
+            lblBadge.Text = "0";
+            lblBadge.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            lblBadge.Paint += LblBadge_Paint;
+
+            // Lambda SizeChanged — KHÔNG được phép trong Designer, đặt ở đây
+            pnlColHeader.SizeChanged += (_, _) =>
+                lblBadge.Left = pnlColHeader.Width - lblBadge.Width - 8;
+
+            pnlColHeader.Controls.AddRange(new Control[] { lblColName, lblBadge });
+
+            flp.AutoScroll = true;
+            flp.BackColor = bodyBg;
+            flp.Dock = DockStyle.Fill;
+            flp.FlowDirection = FlowDirection.TopDown;
+            flp.Padding = new Padding(6);
+            flp.WrapContents = false;
+
+            pnlColumn.Controls.Clear();
+            pnlColumn.Controls.AddRange(new Control[] { flp, pnlColHeader });
         }
 
         public frmKanban(
