@@ -10,14 +10,17 @@ namespace TaskFlowManagement.WinForms.Forms
         private readonly IProjectService _projectService;
         private readonly Expense? _editingExpense;
 
-        // ── Constructor rỗng: CHỈ dùng cho WinForms Designer ─────────────────
+        // Chỉ dùng cho WinForms Designer — không gọi ở runtime
+        [Obsolete("Chỉ dùng cho WinForms Designer")]
         public frmExpenseEdit()
         {
             InitializeComponent();
         }
 
-        // ── DI Constructor: dùng khi chạy thật ───────────────────────────────
-        public frmExpenseEdit(IExpenseService expenseService, IProjectService projectService, Expense? expense = null)
+        public frmExpenseEdit(
+            IExpenseService expenseService,
+            IProjectService projectService,
+            Expense? expense = null)
         {
             _expenseService = expenseService;
             _projectService = projectService;
@@ -29,106 +32,81 @@ namespace TaskFlowManagement.WinForms.Forms
             WireEvents();
         }
 
-        // ── Tất cả UIHelper / helper method được tách ra khỏi Designer ───────
+        // Chuẩn hóa màu sắc, font, và kiểu dáng theo bộ UIHelper của dự án
         private void ApplyClientStyles()
         {
-            // ── panelHeader ───────────────────────────────────────────────────
+            // ── Header ────────────────────────────────────────────────────────
             panelHeader.BackColor = UIHelper.ColorHeaderBg;
             panelAccentLine.BackColor = UIHelper.ColorPrimary;
             lblTitleForm.Font = new Font("Segoe UI", 13F, FontStyle.Bold);
             lblTitleForm.ForeColor = UIHelper.ColorHeaderFg;
 
-            // ── panelBody ─────────────────────────────────────────────────────
+            // ── Body / nền form ───────────────────────────────────────────────
             panelBody.BackColor = UIHelper.ColorBackground;
+            tableLayout.BackColor = UIHelper.ColorBackground;
 
-            int y = 20, gap = 60, lx = 20, tw = 360;
+            // ── Labels ────────────────────────────────────────────────────────
+            foreach (Label lbl in new[] { lblProject, lblType, lblAmount, lblDate, lblNote })
+            {
+                lbl.Font = UIHelper.FontLabel;
+                lbl.ForeColor = UIHelper.ColorDark;
+            }
 
-            ApplyLabel(lblProject, "DỰ ÁN *", lx, y);
-            ApplyCombo(cboProject, lx, y + 20, tw, 1);
+            // ── Inputs ────────────────────────────────────────────────────────
+            foreach (ComboBox cbo in new[] { cboProject, cboType })
+            {
+                cbo.Font = UIHelper.FontBase;
+                cbo.ForeColor = UIHelper.ColorTextPrimary;
+                cbo.BackColor = UIHelper.ColorSurface;
+            }
 
-            y += gap;
-            ApplyLabel(lblType, "LOẠI CHI PHÍ *", lx, y);
-            ApplyCombo(cboType, lx, y + 20, tw, 2);
-            cboType.Items.Clear();
-            cboType.Items.AddRange(new object[] { "Nhân công", "Phần mềm", "Hạ tầng", "Khác" });
-
-            y += gap;
-            ApplyLabel(lblAmount, "SỐ TIỀN (VNĐ) *", lx, y);
-            numAmount.Location = new Point(lx, y + 20);
-            numAmount.Size = new Size(tw, 30);
-            numAmount.Maximum = 999999999999;
-            numAmount.ThousandsSeparator = true;
             numAmount.Font = UIHelper.FontBase;
-            numAmount.TabIndex = 3;
+            numAmount.ForeColor = UIHelper.ColorTextPrimary;
+            numAmount.BackColor = UIHelper.ColorSurface;
 
-            y += gap;
-            ApplyLabel(lblDate, "NGÀY PHÁT SINH", lx, y);
-            dtpDate.Location = new Point(lx, y + 20);
-            dtpDate.Size = new Size(tw, 30);
-            dtpDate.Format = DateTimePickerFormat.Short;
             dtpDate.Font = UIHelper.FontBase;
-            dtpDate.TabIndex = 4;
+            dtpDate.CalendarForeColor = UIHelper.ColorTextPrimary;
+            dtpDate.CalendarMonthBackground = UIHelper.ColorSurface;
 
-            y += gap;
-            ApplyLabel(lblNote, "GHI CHÚ", lx, y);
-            txtNote.Location = new Point(lx, y + 20);
-            txtNote.Size = new Size(tw, 80);
-            txtNote.Multiline = true;
             txtNote.Font = UIHelper.FontBase;
+            txtNote.ForeColor = UIHelper.ColorTextPrimary;
+            txtNote.BackColor = UIHelper.ColorSurface;
             txtNote.BorderStyle = BorderStyle.FixedSingle;
-            txtNote.PlaceholderText = "Nhập ghi chú (nếu có)...";
-            txtNote.TabIndex = 5;
 
-            // ── panelFooter ───────────────────────────────────────────────────
+            // ── Footer ────────────────────────────────────────────────────────
+            panelFooter.BackColor = UIHelper.ColorBackground;
             panelFooterLine.BackColor = UIHelper.ColorBorderLight;
-            lblError.ForeColor = UIHelper.ColorDanger;
+            flowButtons.BackColor = UIHelper.ColorBackground;
+
             lblError.Font = UIHelper.FontSmall;
+            lblError.ForeColor = UIHelper.ColorDanger;
 
             UIHelper.StyleButton(btnSave, UIHelper.ButtonVariant.Primary);
             UIHelper.StyleButton(btnCancel, UIHelper.ButtonVariant.Secondary);
         }
 
-        // Helpers dùng riêng trong ApplyClientStyles — KHÔNG đặt trong Designer
-        private void ApplyLabel(Label lbl, string text, int x, int y)
-        {
-            lbl.AutoSize = true;
-            lbl.Font = UIHelper.FontLabel;
-            lbl.Location = new Point(x, y);
-            lbl.Text = text;
-        }
-
-        private void ApplyCombo(ComboBox cbo, int x, int y, int w, int tabIdx)
-        {
-            cbo.DropDownStyle = ComboBoxStyle.DropDownList;
-            cbo.Font = UIHelper.FontBase;
-            cbo.Location = new Point(x, y);
-            cbo.Size = new Size(w, 30);
-            cbo.TabIndex = tabIdx;
-        }
-
-        // ─────────────────────────────────────────────────────────────────────
-        // Phần còn lại: giữ nguyên hoàn toàn
-        // ─────────────────────────────────────────────────────────────────────
-
         private void SetupUI()
         {
+            cboType.Items.Clear();
+            cboType.Items.AddRange(new object[] { "Nhân công", "Phần mềm", "Hạ tầng", "Khác" });
+
+            numAmount.ThousandsSeparator = true;
+            numAmount.DecimalPlaces = 0;
+            numAmount.Maximum = 1_000_000_000;
+
             if (_editingExpense != null)
             {
                 lblTitleForm.Text = "✏️  Sửa chi phí";
                 this.Text = "Sửa chi phí";
-                btnSave.Text = "💾  Cập nhật chi phí";
+                btnSave.Text = "💾  Cập nhật";
             }
             else
             {
                 lblTitleForm.Text = "➕  Thêm chi phí mới";
                 this.Text = "Thêm chi phí";
-                btnSave.Text = "💾  Lưu chi phí";
+                btnSave.Text = "💾  Lưu";
                 dtpDate.Value = DateTime.Today;
             }
-
-            numAmount.ThousandsSeparator = true;
-            numAmount.DecimalPlaces = 0;
-            numAmount.Maximum = 1000000000;
         }
 
         private void WireEvents()
@@ -148,20 +126,22 @@ namespace TaskFlowManagement.WinForms.Forms
             try
             {
                 var projects = await _projectService.GetProjectsForUserAsync(
-                    AppSession.UserId, AppSession.IsManager || AppSession.IsAdmin);
+                    AppSession.UserId,
+                    AppSession.IsManager || AppSession.IsAdmin);
 
                 cboProject.Items.Clear();
                 foreach (var p in projects)
                     cboProject.Items.Add(new ComboItem(p.Id, p.Name));
 
-                if (cboProject.Items.Count > 0) cboProject.SelectedIndex = 0;
+                if (cboProject.Items.Count > 0)
+                    cboProject.SelectedIndex = 0;
 
                 cboProject.AdjustDropDownWidth();
                 cboType.AdjustDropDownWidth();
             }
             catch (Exception ex)
             {
-                lblError.Text = "Lỗi tải dự án: " + ex.Message;
+                ShowError("Lỗi tải dự án: " + ex.Message);
             }
         }
 
@@ -172,7 +152,10 @@ namespace TaskFlowManagement.WinForms.Forms
             for (int i = 0; i < cboProject.Items.Count; i++)
             {
                 if ((cboProject.Items[i] as ComboItem)?.Id == _editingExpense.ProjectId)
-                { cboProject.SelectedIndex = i; break; }
+                {
+                    cboProject.SelectedIndex = i;
+                    break;
+                }
             }
 
             cboType.SelectedItem = _editingExpense.ExpenseType;
@@ -204,7 +187,8 @@ namespace TaskFlowManagement.WinForms.Forms
                 {
                     expense.CreatedById = AppSession.UserId;
                     var (ok, msg) = await _expenseService.AddExpenseAsync(expense);
-                    this.InvokeIfRequired(() => {
+                    this.InvokeIfRequired(() =>
+                    {
                         if (ok) { this.DialogResult = DialogResult.OK; this.Close(); }
                         else ShowError(msg);
                     });
@@ -212,7 +196,8 @@ namespace TaskFlowManagement.WinForms.Forms
                 else
                 {
                     var (ok, msg) = await _expenseService.UpdateExpenseAsync(expense);
-                    this.InvokeIfRequired(() => {
+                    this.InvokeIfRequired(() =>
+                    {
                         if (ok) { this.DialogResult = DialogResult.OK; this.Close(); }
                         else ShowError(msg);
                     });

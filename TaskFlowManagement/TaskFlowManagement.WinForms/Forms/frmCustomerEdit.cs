@@ -10,39 +10,86 @@ namespace TaskFlowManagement.WinForms.Forms
         private readonly Customer? _editCustomer;
         private readonly bool _isEdit;
 
+        // Constructor dành riêng cho WinForms Designer — không dùng trực tiếp
+        [Obsolete("Chỉ dùng cho WinForms Designer")]
+        public frmCustomerEdit()
+        {
+            InitializeComponent();
+        }
+
         public frmCustomerEdit(ICustomerRepository customerRepo, Customer? editCustomer)
         {
             _customerRepo = customerRepo;
             _editCustomer = editCustomer;
-            _isEdit       = editCustomer != null;
+            _isEdit = editCustomer != null;
+
             InitializeComponent();
+            ApplyClientStyles();
             LoadForm();
+        }
+
+        // ── Khởi tạo giao diện ──────────────────────────────────
+
+        private void ApplyClientStyles()
+        {
+            // Header
+            panelHeader.BackColor = UIHelper.ColorHeaderBg;
+            panelAccentLine.BackColor = UIHelper.ColorPrimary;
+            lblTitleForm.ForeColor = UIHelper.ColorSurface;
+
+            // Body
+            panelBody.BackColor = UIHelper.ColorBackground;
+            tableFields.BackColor = UIHelper.ColorBackground;
+
+            // Labels
+            var fieldLabels = new[] { lblCompany, lblContact, lblEmail, lblPhone, lblAddress };
+            foreach (var lbl in fieldLabels)
+                lbl.ForeColor = UIHelper.ColorMuted;          // ← ColorTextSecondary → ColorMuted
+
+            // TextBoxes
+            var fieldInputs = new[] { txtCompany, txtContact, txtEmail, txtPhone, txtAddress };
+            foreach (var txt in fieldInputs)
+            {
+                txt.BackColor = UIHelper.ColorSurface;
+                txt.ForeColor = UIHelper.ColorTextPrimary;
+            }
+
+            // Footer
+            panelFooter.BackColor = UIHelper.ColorSurface;
+            panelFooterLine.BackColor = UIHelper.ColorBorderLight;  // ← ColorBorder → ColorBorderLight
+            flowButtons.BackColor = UIHelper.ColorSurface;
+            lblError.ForeColor = UIHelper.ColorDanger;
+
+            // Nút bấm
+            UIHelper.StyleButton(btnSave, UIHelper.ButtonVariant.Primary);
+            UIHelper.StyleButton(btnCancel, UIHelper.ButtonVariant.Secondary);
         }
 
         private void LoadForm()
         {
             if (_isEdit)
             {
-                this.Text         = "Sửa thông tin khách hàng";
+                this.Text = "Sửa thông tin khách hàng";
                 lblTitleForm.Text = "✏️  Sửa thông tin";
-                txtCompany.Text   = _editCustomer!.CompanyName;
-                txtContact.Text   = _editCustomer.ContactName ?? "";
-                txtEmail.Text     = _editCustomer.Email       ?? "";
-                txtPhone.Text     = _editCustomer.Phone       ?? "";
-                txtAddress.Text   = _editCustomer.Address     ?? "";
+                txtCompany.Text = _editCustomer!.CompanyName;
+                txtContact.Text = _editCustomer.ContactName ?? "";
+                txtEmail.Text = _editCustomer.Email ?? "";
+                txtPhone.Text = _editCustomer.Phone ?? "";
+                txtAddress.Text = _editCustomer.Address ?? "";
             }
             else
             {
-                this.Text         = "Thêm khách hàng mới";
+                this.Text = "Thêm khách hàng mới";
                 lblTitleForm.Text = "➕  Thêm khách hàng mới";
             }
         }
+
+        // ── Event Handlers ───────────────────────────────────────
 
         private async void btnSave_Click(object sender, EventArgs e)
         {
             lblError.Text = "";
 
-            // Validate
             if (string.IsNullOrWhiteSpace(txtCompany.Text))
             {
                 lblError.Text = "⚠  Tên công ty không được để trống.";
@@ -50,7 +97,6 @@ namespace TaskFlowManagement.WinForms.Forms
                 return;
             }
 
-            // BUG FIX: Validate email nếu có nhập
             var emailInput = txtEmail.Text.Trim();
             if (!string.IsNullOrEmpty(emailInput) && !emailInput.Contains('@'))
             {
@@ -65,10 +111,10 @@ namespace TaskFlowManagement.WinForms.Forms
                 if (_isEdit)
                 {
                     _editCustomer!.CompanyName = txtCompany.Text.Trim();
-                    _editCustomer.ContactName  = NullIfEmpty(txtContact.Text);
-                    _editCustomer.Email        = NullIfEmpty(emailInput);
-                    _editCustomer.Phone        = NullIfEmpty(txtPhone.Text);
-                    _editCustomer.Address      = NullIfEmpty(txtAddress.Text);
+                    _editCustomer.ContactName = NullIfEmpty(txtContact.Text);
+                    _editCustomer.Email = NullIfEmpty(emailInput);
+                    _editCustomer.Phone = NullIfEmpty(txtPhone.Text);
+                    _editCustomer.Address = NullIfEmpty(txtAddress.Text);
                     await _customerRepo.UpdateAsync(_editCustomer);
                 }
                 else
@@ -77,9 +123,9 @@ namespace TaskFlowManagement.WinForms.Forms
                     {
                         CompanyName = txtCompany.Text.Trim(),
                         ContactName = NullIfEmpty(txtContact.Text),
-                        Email       = NullIfEmpty(emailInput),
-                        Phone       = NullIfEmpty(txtPhone.Text),
-                        Address     = NullIfEmpty(txtAddress.Text),
+                        Email = NullIfEmpty(emailInput),
+                        Phone = NullIfEmpty(txtPhone.Text),
+                        Address = NullIfEmpty(txtAddress.Text),
                     };
                     await _customerRepo.AddAsync(newCustomer);
                 }
@@ -89,13 +135,10 @@ namespace TaskFlowManagement.WinForms.Forms
             }
             catch (Exception ex)
             {
-                // BUG FIX: Bắt exception từ DB (ràng buộc unique, connection lỗi...)
-                // Trước đây không có try/catch → crash không xử lý được
                 lblError.Text = "⚠  Lỗi khi lưu: " + (ex.InnerException?.Message ?? ex.Message);
             }
             finally
             {
-                // BUG FIX: Luôn reset loading kể cả khi lỗi
                 if (!this.IsDisposed) SetLoading(false);
             }
         }
@@ -106,13 +149,14 @@ namespace TaskFlowManagement.WinForms.Forms
             this.Close();
         }
 
+        // ── Helpers ──────────────────────────────────────────────
+
         private void SetLoading(bool loading)
         {
             btnSave.Enabled = !loading;
-            btnSave.Text    = loading ? "Đang lưu..." : "💾  Lưu";
+            btnSave.Text = loading ? "Đang lưu..." : "💾  Lưu";
         }
 
-        // Helper: trả null nếu chuỗi rỗng/whitespace
         private static string? NullIfEmpty(string? s)
             => string.IsNullOrWhiteSpace(s) ? null : s.Trim();
     }

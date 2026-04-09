@@ -1,10 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.Drawing;
 using System.Drawing.Drawing2D;
-using System.Linq;
-using System.Threading.Tasks;
-using System.Windows.Forms;
 using TaskFlowManagement.Core.DTOs;
 using TaskFlowManagement.Core.Interfaces.Services;
 using TaskFlowManagement.WinForms.Common;
@@ -16,136 +10,171 @@ namespace TaskFlowManagement.WinForms.Forms
         private readonly ITaskService _taskService;
         private readonly IProjectService _projectService;
         private readonly IExpenseService _expenseService;
-        
+
         private DashboardStatsDto? _currentOverview = null;
         private List<ProgressReportDto> _currentProgress = new();
         private List<BudgetReportDto> _currentBudget = new();
         private ProjectBudgetSummaryDto? _currentBudgetSummary = null;
+
         private int _hoverProgressIndex = -1;
         private EventHandler? _taskDataChangedHandler;
 
-        public frmDashboard(ITaskService taskService, IProjectService projectService, IExpenseService expenseService)
+        [Obsolete("Chỉ dùng cho WinForms Designer")]
+        public frmDashboard()
+        {
+            InitializeComponent();
+        }
+
+        public frmDashboard(
+            ITaskService taskService,
+            IProjectService projectService,
+            IExpenseService expenseService)
         {
             _taskService = taskService;
             _projectService = projectService;
             _expenseService = expenseService;
 
             InitializeComponent();
+            ApplyClientStyles();
             SetupUI();
         }
 
-        private void SetupUI()
+        // ══════════════════════════════════════════════════════════════════
+        // STYLES — Toàn bộ màu sắc, font, border lấy từ UIHelper
+        // ══════════════════════════════════════════════════════════════════
+
+        private void ApplyClientStyles()
         {
-            // Thiết lập Header & Toolbar
-            pnlHeader.Controls.Clear();
-            var header = UIHelper.CreateHeaderPanel("BÁO CÁO TỔNG QUAN", "Cập nhật lúc: " + DateTime.Now.ToString("HH:mm dd/MM/yyyy"));
-            
-            // Đường kẻ Accent mỏng màu xanh phía dưới
-            var pnlAccent = new Panel { Dock = DockStyle.Bottom, Height = 3, BackColor = UIHelper.ColorPrimary };
-            header.Controls.Add(pnlAccent);
-            
-            pnlHeader.Controls.Add(header);
-
-            // GĐ9: Nút "Tải báo cáo tổng kết" – chỉ hiển thị cho Admin/Manager
-            // Vị trí: góc phải pnlHeader, nổi bật trên nền Navy bằng viền sáng
-            if (AppSession.IsAdmin || AppSession.IsManager)
-            {
-                var btnHeaderReport = new Button();
-                UIHelper.StyleButton(btnHeaderReport, UIHelper.ButtonVariant.Secondary);
-                btnHeaderReport.Text = "📊 Tải báo cáo tổng kết";
-                btnHeaderReport.Name = "btnHeaderReport";
-                btnHeaderReport.Size = new Size(190, 34);
-                // Anchor Top|Right: giữ nút ở góc phải khi form resize
-                btnHeaderReport.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-                // pnlHeader.Width = 1200 (design-time). Bút = 1200 - 190 - 20 = 990
-                btnHeaderReport.Location = new Point(990, 17);
-                // Viền sáng nổi bật trên nền Navy header
-                btnHeaderReport.FlatAppearance.BorderSize = 1;
-                btnHeaderReport.FlatAppearance.BorderColor = UIHelper.ColorBorderLight;
-                btnHeaderReport.Click += async (s, e) => await OpenDashboardReportAsync();
-                pnlHeader.Controls.Add(btnHeaderReport);
-                // BringToFront để nút hiển lên trên inner header panel
-                btnHeaderReport.BringToFront();
-            }
-
+            this.BackColor = UIHelper.ColorBackground;
+            pnlHeader.BackColor = UIHelper.ColorBackground;
             pnlToolbar.BackColor = UIHelper.ColorBackground;
+            pnlContent.BackColor = UIHelper.ColorBackground;
+
             lblProjectFilter.Font = UIHelper.FontLabel;
+            lblProjectFilter.ForeColor = UIHelper.ColorTextPrimary;
             UIHelper.StyleFilterCombo(cboProject);
 
-            // Style các panel
-            pnlPieChart.BackColor = UIHelper.ColorSurface;
-            pnlPieChart.BorderStyle = BorderStyle.FixedSingle;
+            tabControlDashboard.Font = UIHelper.FontBase;
+            foreach (TabPage tab in tabControlDashboard.TabPages)
+                tab.BackColor = UIHelper.ColorBackground;
 
+            // Vùng nội dung từng tab
+            pnlCardsLayout.BackColor = UIHelper.ColorBackground;
+
+            pnlPieChartArea.BackColor = UIHelper.ColorSurface;
+            pnlPieChartArea.BorderStyle = BorderStyle.None;
+            pnlPieChart.BackColor = UIHelper.ColorSurface;
+            pnlLegend.BackColor = UIHelper.ColorSurface;
+
+            // pnlProgressChart: nền trắng, cuộn dọc khi nhiều dự án
             pnlProgressChart.BackColor = UIHelper.ColorSurface;
-            pnlProgressChart.BorderStyle = BorderStyle.FixedSingle;
+            pnlProgressChart.BorderStyle = BorderStyle.None;
             pnlProgressChart.AutoScroll = true;
 
+            // pnlBudgetChart: khu vực vẽ thanh ngang — không gộp chung với legend
             pnlBudgetChart.BackColor = UIHelper.ColorSurface;
-            pnlBudgetChart.BorderStyle = BorderStyle.FixedSingle;
+            pnlBudgetChart.BorderStyle = BorderStyle.None;
             pnlBudgetChart.AutoScroll = true;
 
-            // Wire event
-            cboProject.SelectedIndexChanged += async (s, e) => await LoadDashboardDataAsync();
-            pnlProgressChart.MouseMove += PnlProgressChart_MouseMove;
-            pnlProgressChart.MouseLeave += (s, e) => { _hoverProgressIndex = -1; pnlProgressChart.Invalidate(); };
+            // pnlBudgetLegend: panel legend cố định phía dưới biểu đồ ngân sách
+            pnlBudgetLegend.BackColor = UIHelper.ColorSurface;
+            pnlBudgetLegend.BorderStyle = BorderStyle.None;
+        }
 
-            // FIX BUG #1: Dùng named field handler thay vì anonymous lambda
-            // để đảm bảo FormClosing gỡ đúng handler đã đăng ký (cùng reference).
+        // ══════════════════════════════════════════════════════════════════
+        // SETUP
+        // ══════════════════════════════════════════════════════════════════
+
+        private void SetupUI()
+        {
+            BuildHeader();
+            WireEvents();
+            EnableDoubleBuffer(pnlPieChart);
+            EnableDoubleBuffer(pnlLegend);
+            EnableDoubleBuffer(pnlProgressChart);
+            EnableDoubleBuffer(pnlBudgetChart);
+            EnableDoubleBuffer(pnlBudgetLegend);
+
+            // Developer không được xem tab Ngân sách & Chi phí
+            if (!AppSession.IsManager && !AppSession.IsAdmin)
+                tabControlDashboard.TabPages.Remove(tabBudget);
+        }
+
+        private void BuildHeader()
+        {
+            pnlHeader.Controls.Clear();
+
+            var header = UIHelper.CreateHeaderPanel(
+                "BÁO CÁO TỔNG QUAN",
+                "Cập nhật lúc: " + DateTime.Now.ToString("HH:mm dd/MM/yyyy"));
+
+            var pnlAccent = new Panel
+            {
+                Dock = DockStyle.Bottom,
+                Height = 3,
+                BackColor = UIHelper.ColorPrimary
+            };
+            header.Controls.Add(pnlAccent);
+            pnlHeader.Controls.Add(header);
+
+            if (AppSession.IsAdmin || AppSession.IsManager)
+            {
+                var btnReport = new Button();
+                UIHelper.StyleButton(btnReport, UIHelper.ButtonVariant.Secondary);
+                btnReport.Text = "📊 Tải báo cáo tổng kết";
+                btnReport.Name = "btnHeaderReport";
+                btnReport.Size = new Size(196, 34);
+                btnReport.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+                btnReport.Location = new Point(pnlHeader.Width - 212, 17);
+                btnReport.FlatAppearance.BorderSize = 1;
+                btnReport.FlatAppearance.BorderColor = UIHelper.ColorBorderLight;
+                btnReport.Click += async (s, e) => await OpenDashboardReportAsync();
+                pnlHeader.Controls.Add(btnReport);
+                btnReport.BringToFront();
+            }
+        }
+
+        private void WireEvents()
+        {
+            cboProject.SelectedIndexChanged += async (s, e) => await LoadDashboardDataAsync();
+
+            pnlProgressChart.MouseMove += PnlProgressChart_MouseMove;
+            pnlProgressChart.MouseLeave += (s, e) =>
+            {
+                _hoverProgressIndex = -1;
+                pnlProgressChart.Invalidate();
+            };
+
             _taskDataChangedHandler = async (s, e) =>
             {
                 if (this.IsHandleCreated && !this.IsDisposed)
-                {
                     this.BeginInvoke(new Action(async () => await LoadDashboardDataAsync()));
-                }
             };
             _taskService.TaskDataChanged += _taskDataChangedHandler;
             this.FormClosing += (s, e) => _taskService.TaskDataChanged -= _taskDataChangedHandler;
 
-            // Set DoubleBuffered
-            EnableDoubleBuffer(pnlPieChart);
-            EnableDoubleBuffer(pnlProgressChart);
-            EnableDoubleBuffer(pnlBudgetChart);
-
-            // Phân quyền Tab Ngân Quỹ (Developer không được xem thẻ Budget)
-            if (!AppSession.IsManager && !AppSession.IsAdmin)
-            {
-                tabControlDashboard.TabPages.Remove(tabBudget);
-            }
+            // Vẽ lại legend tĩnh khi panel được tạo
+            pnlBudgetLegend.Paint += PnlBudgetLegend_Paint;
         }
 
         private void EnableDoubleBuffer(Control ctrl)
         {
-            var method = typeof(Control).GetMethod("SetStyle", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
-            if (method != null)
+            var method = typeof(Control).GetMethod(
+                "SetStyle",
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+
+            method?.Invoke(ctrl, new object[]
             {
-                method.Invoke(ctrl, new object[] { ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint, true });
-            }
+                ControlStyles.OptimizedDoubleBuffer |
+                ControlStyles.AllPaintingInWmPaint  |
+                ControlStyles.UserPaint,
+                true
+            });
         }
 
-        private void PnlProgressChart_MouseMove(object? sender, MouseEventArgs e)
-        {
-            if (_currentProgress == null || !_currentProgress.Any()) return;
-            
-            int unadjustedY = e.Y - pnlProgressChart.AutoScrollPosition.Y;
-            int startY = 80;
-            int newHoverMode = -1;
-            
-            for (int i = 0; i < _currentProgress.Count; i++)
-            {
-                if (unadjustedY >= startY && unadjustedY < startY + 60)
-                {
-                    newHoverMode = i;
-                    break;
-                }
-                startY += 60;
-            }
-
-            if (_hoverProgressIndex != newHoverMode)
-            {
-                _hoverProgressIndex = newHoverMode;
-                pnlProgressChart.Invalidate();
-            }
-        }
+        // ══════════════════════════════════════════════════════════════════
+        // EVENTS
+        // ══════════════════════════════════════════════════════════════════
 
         private async void frmDashboard_Load(object sender, EventArgs e)
         {
@@ -153,54 +182,84 @@ namespace TaskFlowManagement.WinForms.Forms
             await LoadDashboardDataAsync();
         }
 
+        private void PnlProgressChart_MouseMove(object? sender, MouseEventArgs e)
+        {
+            if (_currentProgress == null || !_currentProgress.Any()) return;
+
+            int adjustedY = e.Y - pnlProgressChart.AutoScrollPosition.Y;
+            int startY = 80;
+            int newHoverIndex = -1;
+
+            for (int i = 0; i < _currentProgress.Count; i++)
+            {
+                if (adjustedY >= startY && adjustedY < startY + 60)
+                {
+                    newHoverIndex = i;
+                    break;
+                }
+                startY += 60;
+            }
+
+            if (_hoverProgressIndex != newHoverIndex)
+            {
+                _hoverProgressIndex = newHoverIndex;
+                pnlProgressChart.Invalidate();
+            }
+        }
+
         public void SelectTab(int tabIndex)
         {
             if (tabIndex >= 0 && tabIndex < tabControlDashboard.TabPages.Count)
             {
                 tabControlDashboard.SelectedIndex = tabIndex;
+                return;
             }
-            else if (tabIndex == 2 && tabControlDashboard.TabPages.Count < 3)
+
+            if (tabIndex == 2 && tabControlDashboard.TabPages.Count < 3)
             {
-                MessageBox.Show("Bạn không có quyền truy cập tab Ngân sách (chỉ dành cho Admin/Manager).", "Cảnh báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show(
+                    "Bạn không có quyền truy cập tab Ngân sách (chỉ dành cho Admin/Manager).",
+                    "Cảnh báo",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
             }
         }
 
+        // ══════════════════════════════════════════════════════════════════
+        // DATA LOADING
+        // ══════════════════════════════════════════════════════════════════
+
         private async Task LoadProjectsAsync()
         {
-            var projects = await _projectService.GetProjectsForUserAsync(AppSession.UserId, AppSession.IsManager);
-            
+            var projects = await _projectService.GetProjectsForUserAsync(
+                AppSession.UserId, AppSession.IsManager);
+
             cboProject.Items.Clear();
             cboProject.Items.Add(new { Id = 0, Name = "-- Toàn bộ hệ thống --" });
-            
             foreach (var p in projects)
-            {
                 cboProject.Items.Add(new { Id = p.Id, Name = p.Name });
-            }
 
             cboProject.DisplayMember = "Name";
             cboProject.ValueMember = "Id";
             cboProject.SelectedIndex = 0;
-            
             cboProject.AdjustDropDownWidth();
-            
+
             if (!AppSession.IsManager && !AppSession.IsAdmin)
-            {
-                cboProject.Enabled = false; // Chỉ xem dữ liệu dự án mình đc chỉ định
-            }
+                cboProject.Enabled = false;
         }
 
         private async Task LoadDashboardDataAsync()
         {
             if (cboProject.SelectedItem == null) return;
+
             var selectedId = (int)((dynamic)cboProject.SelectedItem).Id;
             int? projectId = selectedId == 0 ? null : selectedId;
 
             try
             {
-                // Gọi song song cho nhanh
                 var task1 = _taskService.GetDashboardStatsAsync(projectId);
                 var task2 = _taskService.GetProgressReportAsync(projectId);
-                
+
                 Task<List<BudgetReportDto>>? task3 = null;
                 Task<ProjectBudgetSummaryDto?>? task4 = null;
 
@@ -216,53 +275,72 @@ namespace TaskFlowManagement.WinForms.Forms
                 if (task3 != null) _currentBudget = await task3;
                 if (task4 != null) _currentBudgetSummary = await task4;
                 else _currentBudgetSummary = null;
-                
+
                 RenderStatCards(_currentOverview);
-                
                 pnlPieChart.Invalidate();
+                pnlLegend.Invalidate();
                 pnlProgressChart.Invalidate();
-                if (task3 != null) pnlBudgetChart.Invalidate();
+                if (task3 != null)
+                {
+                    pnlBudgetChart.Invalidate();
+                    pnlBudgetLegend.Invalidate();
+                }
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Lỗi tải báo cáo: " + ex.Message, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Lỗi tải báo cáo: " + ex.Message, "Lỗi",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
         // ══════════════════════════════════════════════════════════════════
-        // TAB 1: OVERVIEW & PIE CHART
+        // TAB 1 – STAT CARDS
+        // Dùng TableLayoutPanel nội tại mỗi card để căn chỉnh icon/text chính xác
         // ══════════════════════════════════════════════════════════════════
-        
+
         private void RenderStatCards(DashboardStatsDto stats)
         {
-            pnlCards.Controls.Clear();
-            pnlCards.Controls.Add(CreateCard("Tổng Công Việc", stats.TotalTasks.ToString(), "📁", UIHelper.ColorPrimary, "ALL"));
-            pnlCards.Controls.Add(CreateCard("Đã Hoàn Thành", stats.CompletedTasks.ToString(), "✅", UIHelper.ColorSuccess, "COMPLETED"));
-            pnlCards.Controls.Add(CreateCard("Sự Cố (Quá Hạn)", stats.OverdueTasks.ToString(), "🚩", Color.FromArgb(185, 28, 28), "OVERDUE")); 
-            
-            if (_currentBudgetSummary != null)
+            // Xóa toàn bộ card cũ trước khi render lại
+            for (int col = 0; col < pnlCardsLayout.ColumnCount; col++)
             {
-                Color budgetColor = _currentBudgetSummary.IsOverBudget ? UIHelper.ColorDanger : UIHelper.ColorSuccess;
-                string budgetVal = _currentBudgetSummary.Remaining.ToString("N0") + " ₫";
-                pnlCards.Controls.Add(CreateCard("Ngân Sách Còn Lại", budgetVal, "💰", budgetColor, "BUDGET"));
-            }
-            else
-            {
-                pnlCards.Controls.Add(CreateCard("Tới Hạn (7 ngày)", stats.DueSoonTasks.ToString(), "⚠️", UIHelper.ColorWarning, "DUE_SOON"));
+                var existing = pnlCardsLayout.GetControlFromPosition(col, 0);
+                if (existing == null) continue;
+                pnlCardsLayout.Controls.Remove(existing);
+                existing.Dispose();
             }
 
-            // Gắn sự kiện click để Drill-down
-            WireUpDashboardEvents();
+            Panel card3 = _currentBudgetSummary != null
+                ? CreateStatCard(
+                    "Ngân Sách Còn Lại",
+                    _currentBudgetSummary.Remaining.ToString("N0") + " ₫",
+                    "💰",
+                    _currentBudgetSummary.IsOverBudget ? UIHelper.ColorDanger : UIHelper.ColorSuccess,
+                    "BUDGET", isLast: true)
+                : CreateStatCard("Tới Hạn (7 ngày)", stats.DueSoonTasks.ToString(),
+                    "⚠️", UIHelper.ColorWarning, "DUE_SOON", isLast: true);
+
+            pnlCardsLayout.Controls.Add(
+                CreateStatCard("Tổng Công Việc", stats.TotalTasks.ToString(),
+                    "📁", UIHelper.ColorPrimary, "ALL", isLast: false), 0, 0);
+            pnlCardsLayout.Controls.Add(
+                CreateStatCard("Đã Hoàn Thành", stats.CompletedTasks.ToString(),
+                    "✅", UIHelper.ColorSuccess, "COMPLETED", isLast: false), 1, 0);
+            pnlCardsLayout.Controls.Add(
+                CreateStatCard("Sự Cố (Quá Hạn)", stats.OverdueTasks.ToString(),
+                    "🚩", UIHelper.ColorDanger, "OVERDUE", isLast: false), 2, 0);
+            pnlCardsLayout.Controls.Add(card3, 3, 0);
+
+            AttachCardClickEvents();
         }
 
-        private void WireUpDashboardEvents()
+        private void AttachCardClickEvents()
         {
-            foreach (Control ctrl in pnlCards.Controls)
+            foreach (Control ctrl in pnlCardsLayout.Controls)
             {
-                if (ctrl is Panel pnlCard)
+                if (ctrl is Panel card)
                 {
-                    pnlCard.Cursor = Cursors.Hand;
-                    AttachClickRecursive(pnlCard, StatCard_Click);
+                    card.Cursor = Cursors.Hand;
+                    AttachClickRecursive(card, StatCard_Click);
                 }
             }
         }
@@ -271,85 +349,588 @@ namespace TaskFlowManagement.WinForms.Forms
         {
             parent.Click += handler;
             foreach (Control child in parent.Controls)
-            {
                 AttachClickRecursive(child, handler);
-            }
         }
 
         private void StatCard_Click(object? sender, EventArgs e)
         {
             string? filterType = null;
             Control? current = sender as Control;
-            
-            // Tìm Tag từ chính nó hoặc cha (vì user có thể click vào label bên trong panel)
-            while (current != null && current != pnlCards)
+
+            while (current != null && current != pnlCardsLayout)
             {
-                if (current.Tag != null)
-                {
-                    filterType = current.Tag.ToString();
-                    break;
-                }
+                if (current.Tag != null) { filterType = current.Tag.ToString(); break; }
                 current = current.Parent;
             }
 
             if (string.IsNullOrEmpty(filterType) || filterType == "BUDGET") return;
 
-            // Lấy ProjectId hiện tại từ ComboBox
             int? projectId = null;
             if (cboProject.SelectedItem != null)
             {
-                var selectedId = (int)((dynamic)cboProject.SelectedItem).Id;
-                if (selectedId > 0) projectId = selectedId;
+                var selId = (int)((dynamic)cboProject.SelectedItem).Id;
+                if (selId > 0) projectId = selId;
             }
 
-            // Điều hướng qua frmMain (MDI Bridge)
             if (this.MdiParent is frmMain mainForm)
-            {
                 mainForm.OpenTaskListWithFilter(filterType, projectId);
+        }
+
+        /// <summary>
+        /// Thẻ thống kê sử dụng TableLayoutPanel nội tại để phân vùng:
+        /// cột trái (75%) chứa tiêu đề + số liệu, cột phải (25%) chứa icon emoji.
+        /// Thanh accent 5px bên trái thay thế border cứng — nhẹ hơn về thị giác.
+        /// </summary>
+        private Panel CreateStatCard(string title, string value, string icon,
+            Color accentColor, string tag, bool isLast)
+        {
+            var pnlOuter = new Panel
+            {
+                Dock = DockStyle.Fill,
+                Margin = isLast ? new Padding(0) : new Padding(0, 0, 14, 0),
+                BackColor = UIHelper.ColorSurface,
+                BorderStyle = BorderStyle.None,
+                Tag = tag,
+                Padding = new Padding(0)
+            };
+
+            // Thanh accent bên trái
+            pnlOuter.Controls.Add(new Panel
+            {
+                BackColor = accentColor,
+                Dock = DockStyle.Left,
+                Width = 5
+            });
+
+            // TableLayoutPanel nội tại: 2 cột (text | icon), fill toàn bộ card
+            var tbl = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 2,
+                RowCount = 1,
+                Margin = new Padding(0),
+                Padding = new Padding(14, 12, 10, 12),
+                BackColor = UIHelper.ColorSurface
+            };
+            tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 75F));
+            tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25F));
+            tbl.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+
+            // Panel trái: tiêu đề + giá trị xếp dọc
+            var pnlText = new Panel { Dock = DockStyle.Fill, BackColor = UIHelper.ColorSurface };
+            var lblTitle = new Label
+            {
+                Text = title,
+                ForeColor = UIHelper.ColorTextSecondary,
+                Font = UIHelper.FontBold,
+                AutoSize = false,
+                Dock = DockStyle.Top,
+                Height = 22,
+                Padding = new Padding(0),
+                TextAlign = ContentAlignment.MiddleLeft
+            };
+            var lblValue = new Label
+            {
+                Text = value,
+                ForeColor = UIHelper.ColorTextPrimary,
+                Font = UIHelper.FontHeaderLarge,
+                AutoSize = false,
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleLeft
+            };
+            pnlText.Controls.Add(lblValue);
+            pnlText.Controls.Add(lblTitle);
+
+            // Panel phải: icon emoji căn giữa
+            var pnlIcon = new Panel { Dock = DockStyle.Fill, BackColor = UIHelper.ColorSurface };
+            var lblIcon = new Label
+            {
+                Text = icon,
+                ForeColor = accentColor,
+                Font = new Font("Segoe UI Emoji", 22F),
+                AutoSize = false,
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleCenter
+            };
+            pnlIcon.Controls.Add(lblIcon);
+
+            tbl.Controls.Add(pnlText, 0, 0);
+            tbl.Controls.Add(pnlIcon, 1, 0);
+            pnlOuter.Controls.Add(tbl);
+
+            // Viền bo góc mờ nhẹ thay thế BorderStyle cứng
+            pnlOuter.Paint += (s, pe) =>
+            {
+                pe.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                var rect = new Rectangle(0, 0, pnlOuter.Width - 1, pnlOuter.Height - 1);
+                using var path = GetRoundedRect(rect, 10);
+                using var pen = new Pen(UIHelper.ColorBorderLight);
+                pe.Graphics.DrawPath(pen, path);
+            };
+
+            return pnlOuter;
+        }
+
+        // ══════════════════════════════════════════════════════════════════
+        // TAB 1 – DONUT CHART
+        // ══════════════════════════════════════════════════════════════════
+
+        private void PnlPieChart_Paint(object sender, PaintEventArgs e)
+        {
+            var g = e.Graphics;
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+            g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
+
+            DrawPanelTitle(g, pnlPieChart.Width,
+                "Thống kê trạng thái Công việc (" + (_currentOverview?.TotalTasks ?? 0) + " tasks)");
+
+            if (_currentOverview == null || !_currentOverview.StatusSummaries.Any(x => x.Count > 0))
+            {
+                DrawNoData(g, pnlPieChart.Width, pnlPieChart.Height);
+                return;
+            }
+
+            int totalTasks = _currentOverview.StatusSummaries.Sum(s => s.Count);
+            if (totalTasks == 0) return;
+
+            int padding = 32;
+            int chartSize = Math.Min(pnlPieChart.Width - padding * 2, pnlPieChart.Height - 90);
+            if (chartSize < 50) chartSize = 50;
+
+            int originX = (pnlPieChart.Width - chartSize) / 2;
+            int originY = 72 + (pnlPieChart.Height - 72 - chartSize) / 2;
+            if (originY < 72) originY = 72;
+
+            var pieRect = new Rectangle(originX, originY, chartSize, chartSize);
+            float startAngle = -90f;
+
+            foreach (var status in _currentOverview.StatusSummaries)
+            {
+                if (status.Count == 0) continue;
+                float sweep = status.Count / (float)totalTasks * 360f;
+                using var brush = new SolidBrush(ColorTranslator.FromHtml(status.ColorHex));
+                g.FillPie(brush, pieRect, startAngle, sweep);
+                startAngle += sweep;
+            }
+
+            // Lỗ 62% tạo hiệu ứng donut cân bằng thẩm mỹ
+            int holeSize = (int)(chartSize * 0.62);
+            var holeRect = new Rectangle(
+                pieRect.X + (chartSize - holeSize) / 2,
+                pieRect.Y + (chartSize - holeSize) / 2,
+                holeSize, holeSize);
+
+            using (var holeBrush = new SolidBrush(UIHelper.ColorSurface))
+                g.FillEllipse(holeBrush, holeRect);
+
+            using var centerFont = new Font("Segoe UI", 18F, FontStyle.Bold);
+            using var centerBrush = new SolidBrush(UIHelper.ColorTextPrimary);
+            string centerText = totalTasks.ToString();
+            SizeF textSz = g.MeasureString(centerText, centerFont);
+            g.DrawString(centerText, centerFont, centerBrush,
+                pieRect.X + (chartSize - textSz.Width) / 2,
+                pieRect.Y + (chartSize - textSz.Height) / 2);
+        }
+
+        private void PnlLegend_Paint(object sender, PaintEventArgs e)
+        {
+            if (_currentOverview == null) return;
+
+            var g = e.Graphics;
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+            g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
+
+            var items = _currentOverview.StatusSummaries.Where(s => s.Count > 0).ToList();
+            if (!items.Any()) return;
+
+            const int itemHeight = 34;
+            int totalH = items.Count * itemHeight;
+            int startY = (pnlLegend.Height - totalH) / 2;
+            if (startY < 20) startY = 20;
+            const int lx = 24;
+
+            foreach (var status in items)
+            {
+                var swatchRect = new Rectangle(lx, startY + 2, 14, 14);
+                using var swatchBrush = new SolidBrush(ColorTranslator.FromHtml(status.ColorHex));
+                using var swatchPath = GetRoundedRect(swatchRect, 3);
+                g.FillPath(swatchBrush, swatchPath);
+
+                using var textBrush = new SolidBrush(UIHelper.ColorTextPrimary);
+                g.DrawString($"{status.StatusName}   ({status.Count})",
+                    UIHelper.FontBase, textBrush, lx + 24, startY);
+
+                startY += itemHeight;
             }
         }
 
-        private Panel CreateCard(string title, string value, string icon, Color accentColor, string tag)
+        // ══════════════════════════════════════════════════════════════════
+        // TAB 2 – PROGRESS BARS
+        // labelColWidth tăng lên 260px để tên dự án dài không bị cắt sớm
+        // ══════════════════════════════════════════════════════════════════
+
+        private void PnlProgressChart_Paint(object sender, PaintEventArgs e)
         {
-            var pnl = new Panel
+            var g = e.Graphics;
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+            g.TranslateTransform(
+                pnlProgressChart.AutoScrollPosition.X,
+                pnlProgressChart.AutoScrollPosition.Y);
+
+            int panelWidth = Math.Max(pnlProgressChart.Width, pnlProgressChart.AutoScrollMinSize.Width);
+            DrawPanelTitle(g, panelWidth, "Tiến độ Thực tế Dự án (%)");
+
+            if (_currentProgress == null || !_currentProgress.Any())
             {
-                Width = 260, Height = 110,
-                BackColor = UIHelper.ColorSurface,
-                Margin = new Padding(0, 0, 20, 0),
-                Tag = tag
-            };
+                DrawNoData(g, pnlProgressChart.Width, pnlProgressChart.Height);
+                return;
+            }
 
-            var pnlAccent = new Panel { BackColor = accentColor, Dock = DockStyle.Left, Width = 6 };
+            const int marginLeft = 30;
+            const int nameWidth = 260;   // mở rộng cột tên để hiển thị đủ ký tự
+            const int barHeight = 26;
+            int maxBarWidth = pnlProgressChart.ClientSize.Width - marginLeft - nameWidth - 80;
+            if (maxBarWidth < 100) maxBarWidth = 100;
 
-            var lblTitle = new Label { Text = title, ForeColor = UIHelper.ColorSubtitle, Font = UIHelper.FontSmall, Location = new Point(20, 20), AutoSize = true };
-            var lblValue = new Label { Text = value, ForeColor = UIHelper.ColorHeaderBg, Font = UIHelper.FontHeaderLarge, Location = new Point(16, 45), AutoSize = true };
-            var lblIcon = new Label { Text = icon, ForeColor = accentColor, Font = new Font("Segoe UI", 24F), Location = new Point(190, 30), AutoSize = true };
+            int startY = 80;
+            int rowIndex = 0;
 
-            pnl.Controls.Add(lblTitle); pnl.Controls.Add(lblValue); pnl.Controls.Add(lblIcon); pnl.Controls.Add(pnlAccent);
-            
-            pnl.Paint += (s, e) => {
-                e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-                var rect = new Rectangle(0, 0, pnl.Width - 1, pnl.Height - 1);
-                using var path = GetRoundedRect(rect, 8);
-                using var pen = new Pen(UIHelper.ColorBorderLight);
-                e.Graphics.DrawPath(pen, path);
-            };
+            foreach (var proj in _currentProgress)
+            {
+                if (rowIndex == _hoverProgressIndex)
+                {
+                    using var hoverBrush = new SolidBrush(Color.FromArgb(10, 0, 0, 0));
+                    g.FillRectangle(hoverBrush,
+                        marginLeft - 12, startY - 6,
+                        pnlProgressChart.ClientSize.Width - marginLeft * 2 + 24, 62);
+                }
 
-            return pnl;
+                // Cắt tên dài hơn 34 ký tự để vừa cột 260px
+                string displayName = proj.ProjectName.Length > 34
+                    ? proj.ProjectName[..31] + "…"
+                    : proj.ProjectName;
+
+                using (var nameBrush = new SolidBrush(UIHelper.ColorTextPrimary))
+                    g.DrawString(displayName, UIHelper.FontGridHeader, nameBrush,
+                        marginLeft + 12, startY);
+
+                using (var muteBrush = new SolidBrush(UIHelper.ColorMuted))
+                    g.DrawString($"{proj.CompletedTasks}/{proj.TotalTasks} tasks",
+                        UIHelper.FontSmall, muteBrush, marginLeft + 12, startY + 20);
+
+                int barX = marginLeft + nameWidth;
+                var bgRect = new Rectangle(barX, startY, maxBarWidth, barHeight);
+                using (var bgBrush = new SolidBrush(UIHelper.ColorBorderLight))
+                    g.FillRectangle(bgBrush, bgRect);
+
+                Color barColor = UIHelper.ColorPrimary;
+                if (proj.AvgProgress >= 100) barColor = UIHelper.ColorSuccess;
+                else if (proj.Status is "OnHold" or "Delayed") barColor = UIHelper.ColorWarning;
+
+                int fillWidth = (int)(maxBarWidth * (double)(proj.AvgProgress / 100m));
+                if (fillWidth > 0)
+                {
+                    var fillRect = new Rectangle(barX, startY, fillWidth, barHeight);
+                    using var fillBrush = new LinearGradientBrush(
+                        fillRect,
+                        ControlPaint.Light(barColor, 0.4f),
+                        barColor,
+                        LinearGradientMode.Horizontal);
+                    g.FillRectangle(fillBrush, fillRect);
+                }
+
+                g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
+                string pctText = $"{Math.Round(proj.AvgProgress, 1)}%";
+                SizeF pctSize = g.MeasureString(pctText, UIHelper.FontBase);
+                using (var pctBrush = new SolidBrush(UIHelper.ColorTextPrimary))
+                    g.DrawString(pctText, UIHelper.FontBase, pctBrush,
+                        barX + fillWidth + 6,
+                        startY + (barHeight - pctSize.Height) / 2);
+
+                using (var divPen = new Pen(UIHelper.ColorBorderLight))
+                    g.DrawLine(divPen,
+                        marginLeft, startY + barHeight + 16,
+                        pnlProgressChart.ClientSize.Width - marginLeft, startY + barHeight + 16);
+
+                startY += 60;
+                rowIndex++;
+            }
+
+            int totalHeight = startY + 20;
+            if (pnlProgressChart.AutoScrollMinSize.Height != totalHeight)
+                pnlProgressChart.AutoScrollMinSize = new Size(0, totalHeight);
         }
 
+        // ══════════════════════════════════════════════════════════════════
+        // TAB 3 – BUDGET HORIZONTAL BAR CHART
+        // pnlBudgetChart vẽ biểu đồ cuộn; pnlBudgetLegend cố định dưới cùng.
+        // labelColWidth = 260px để tên dự án dài hiển thị đủ chữ.
+        // ══════════════════════════════════════════════════════════════════
+
+        private void PnlBudgetChart_Paint(object sender, PaintEventArgs e)
+        {
+            var g = e.Graphics;
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+            g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
+
+            // Bù trừ cuộn dọc để toàn bộ nội dung di chuyển cùng scrollbar
+            g.TranslateTransform(0, pnlBudgetChart.AutoScrollPosition.Y);
+
+            DrawPanelTitle(g, pnlBudgetChart.Width,
+                "Thống kê Ngân sách Thực tế (Budget vs Expenses)");
+
+            if (_currentBudget == null || !_currentBudget.Any())
+            {
+                DrawNoData(g, pnlBudgetChart.Width, pnlBudgetChart.Height);
+                return;
+            }
+
+            const int paddingTop = 72;
+            const int paddingRight = 20;
+            const int labelColWidth = 260;  // cột tên — mở rộng để đọc được tên dự án dài
+            const int barPairGap = 6;
+            const int rowGap = 16;
+            const int barThickness = 22;
+            const int pairHeight = barThickness * 2 + barPairGap;
+            int rowStride = pairHeight + rowGap;
+
+            int barMaxWidth = pnlBudgetChart.ClientSize.Width
+                              - labelColWidth - paddingRight - 90;
+            if (barMaxWidth < 80) barMaxWidth = 80;
+
+            decimal maxVal = _currentBudget.Max(b => Math.Max(b.Budget, b.TotalExpense));
+            if (maxVal == 0) maxVal = 1;
+
+            int totalContentHeight = paddingTop + _currentBudget.Count * rowStride + 24;
+            if (pnlBudgetChart.AutoScrollMinSize.Height != totalContentHeight)
+                pnlBudgetChart.AutoScrollMinSize = new Size(0, totalContentHeight);
+
+            // Trục Y dọc và đường lưới dọc
+            int axisX = labelColWidth + 10;
+            int axisTop = paddingTop;
+            int axisBottom = paddingTop + _currentBudget.Count * rowStride - rowGap;
+
+            using (var gridPen = new Pen(UIHelper.ColorBorderLight))
+            using (var lblBrush = new SolidBrush(UIHelper.ColorMuted))
+            {
+                g.DrawLine(gridPen, axisX, axisTop, axisX, axisBottom);
+
+                var sf = new StringFormat { Alignment = StringAlignment.Center };
+                for (int i = 0; i <= 5; i++)
+                {
+                    int gx = axisX + (int)(barMaxWidth * i / 5.0);
+                    decimal val = maxVal * i / 5;
+                    string lbl = val >= 1_000_000_000
+                        ? (val / 1_000_000_000).ToString("0.#B")
+                        : val >= 1_000_000
+                            ? (val / 1_000_000).ToString("0.#M")
+                            : (val / 1_000).ToString("0.#k");
+
+                    if (i > 0)
+                        g.DrawLine(gridPen, gx, axisTop, gx, axisBottom);
+
+                    g.DrawString(lbl, UIHelper.FontSmall, lblBrush,
+                        new RectangleF(gx - 24, axisTop - 18, 48, 16), sf);
+                }
+            }
+
+            int currentY = paddingTop;
+
+            foreach (var item in _currentBudget)
+            {
+                // Cắt tên dài hơn 32 ký tự để vừa cột 260px
+                string displayName = item.ProjectName.Length > 32
+                    ? item.ProjectName[..29] + "…"
+                    : item.ProjectName;
+
+                var nameRect = new RectangleF(4, currentY, labelColWidth - 8, pairHeight);
+                var nameSf = new StringFormat
+                {
+                    Alignment = StringAlignment.Far,
+                    LineAlignment = StringAlignment.Center,
+                    Trimming = StringTrimming.EllipsisCharacter
+                };
+                using (var nameBrush = new SolidBrush(UIHelper.ColorTextPrimary))
+                    g.DrawString(displayName, UIHelper.FontGridHeader, nameBrush, nameRect, nameSf);
+
+                // Thanh Budget
+                int wBudget = (int)(barMaxWidth * (double)(item.Budget / maxVal));
+                if (wBudget > 0)
+                {
+                    var rBudget = new Rectangle(axisX + 1, currentY, wBudget, barThickness);
+                    using var bBrush = new LinearGradientBrush(
+                        rBudget,
+                        ControlPaint.Light(UIHelper.ColorAccent, 0.4f),
+                        UIHelper.ColorAccent,
+                        LinearGradientMode.Horizontal);
+                    g.FillRectangle(bBrush, rBudget);
+                }
+
+                string budgetLbl = item.Budget >= 1_000_000
+                    ? (item.Budget / 1_000_000).ToString("0.#M ₫")
+                    : item.Budget.ToString("N0") + " ₫";
+                using (var valBrush = new SolidBrush(UIHelper.ColorMuted))
+                    g.DrawString(budgetLbl, UIHelper.FontSmall, valBrush,
+                        axisX + wBudget + 6,
+                        currentY + (barThickness - UIHelper.FontSmall.Height) / 2);
+
+                // Thanh Expense — màu đỏ khi vượt quỹ, xanh khi an toàn
+                int yExpense = currentY + barThickness + barPairGap;
+                int wExpense = (int)(barMaxWidth * (double)(item.TotalExpense / maxVal));
+                Color expColor = item.TotalExpense > item.Budget
+                    ? UIHelper.ColorDanger
+                    : UIHelper.ColorSuccess;
+
+                if (wExpense > 0)
+                {
+                    var rExpense = new Rectangle(axisX + 1, yExpense, wExpense, barThickness);
+                    using var eBrush = new LinearGradientBrush(
+                        rExpense,
+                        ControlPaint.Light(expColor, 0.4f),
+                        expColor,
+                        LinearGradientMode.Horizontal);
+                    g.FillRectangle(eBrush, rExpense);
+                }
+
+                string expLbl = item.TotalExpense >= 1_000_000
+                    ? (item.TotalExpense / 1_000_000).ToString("0.#M ₫")
+                    : item.TotalExpense.ToString("N0") + " ₫";
+                string pctLbl = $"({item.UsagePercentage}%)";
+
+                using (var expBrush = new SolidBrush(UIHelper.ColorMuted))
+                {
+                    g.DrawString(expLbl, UIHelper.FontSmall, expBrush,
+                        axisX + wExpense + 6,
+                        yExpense + (barThickness - UIHelper.FontSmall.Height) / 2);
+
+                    SizeF expSz = g.MeasureString(expLbl, UIHelper.FontSmall);
+                    using var pctBrush = new SolidBrush(expColor);
+                    g.DrawString(pctLbl, UIHelper.FontSmall, pctBrush,
+                        axisX + wExpense + 6 + expSz.Width,
+                        yExpense + (barThickness - UIHelper.FontSmall.Height) / 2);
+                }
+
+                using (var divPen = new Pen(UIHelper.ColorBorderLight))
+                    g.DrawLine(divPen,
+                        4, currentY + pairHeight + rowGap / 2,
+                        pnlBudgetChart.ClientSize.Width - paddingRight,
+                        currentY + pairHeight + rowGap / 2);
+
+                currentY += rowStride;
+            }
+        }
+
+        // ══════════════════════════════════════════════════════════════════
+        // TAB 3 – BUDGET LEGEND (panel riêng biệt, Dock = Bottom)
+        // Tách khỏi khu vực vẽ biểu đồ để không bị đè lên thanh ngang
+        // ══════════════════════════════════════════════════════════════════
+
+        private void PnlBudgetLegend_Paint(object sender, PaintEventArgs e)
+        {
+            var g = e.Graphics;
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+            g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
+
+            const int swatchSize = 12;
+            const int itemGap = 28;
+            int lx = 20;
+            int ly = (pnlBudgetLegend.Height - UIHelper.FontBase.Height) / 2;
+            if (ly < 4) ly = 4;
+
+            void DrawItem(Color color, string label)
+            {
+                var swatchRect = new Rectangle(lx, ly + 2, swatchSize, swatchSize);
+                using var brush = new SolidBrush(color);
+                using var path = GetRoundedRect(swatchRect, 3);
+                g.FillPath(brush, path);
+
+                using var textBrush = new SolidBrush(UIHelper.ColorTextPrimary);
+                SizeF sz = g.MeasureString(label, UIHelper.FontBase);
+                g.DrawString(label, UIHelper.FontBase, textBrush, lx + swatchSize + 6, ly);
+                lx += (int)sz.Width + swatchSize + itemGap;
+            }
+
+            // Đường kẻ ngăn cách legend với biểu đồ phía trên
+            using (var divPen = new Pen(UIHelper.ColorBorderLight))
+                g.DrawLine(divPen, 0, 0, pnlBudgetLegend.Width, 0);
+
+            DrawItem(UIHelper.ColorAccent, "Ngân sách (Budget)");
+            DrawItem(UIHelper.ColorSuccess, "Chi phí thực tế — An toàn");
+            DrawItem(UIHelper.ColorDanger, "Chi phí thực tế — Vượt quỹ");
+        }
+
+        // ══════════════════════════════════════════════════════════════════
+        // BÁO CÁO TỔNG KẾT
+        // ══════════════════════════════════════════════════════════════════
+
+        /// <summary>
+        /// Mở frmReportViewer với projectId đang chọn (null = toàn hệ thống).
+        /// Chỉ gọi khi AppSession.IsAdmin || AppSession.IsManager.
+        /// </summary>
+        private async Task OpenDashboardReportAsync()
+        {
+            try
+            {
+                this.Cursor = Cursors.WaitCursor;
+                Application.DoEvents();
+
+                int? selectedProjectId = null;
+                if (cboProject.SelectedItem != null)
+                {
+                    var selId = (int)((dynamic)cboProject.SelectedItem).Id;
+                    if (selId > 0) selectedProjectId = selId;
+                }
+
+                using var reportForm = new frmReportViewer(_expenseService, selectedProjectId);
+                this.Cursor = Cursors.Default;
+                reportForm.ShowDialog(this);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    $"Không thể mở cửa sổ báo cáo:\n\n{ex.Message}",
+                    "Lỗi Báo cáo",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+            }
+            finally
+            {
+                this.Cursor = Cursors.Default;
+            }
+        }
+
+        // ══════════════════════════════════════════════════════════════════
+        // GDI+ HELPERS
+        // ══════════════════════════════════════════════════════════════════
+
+        private void DrawPanelTitle(Graphics g, int panelWidth, string title)
+        {
+            g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
+            using var brush = new SolidBrush(UIHelper.ColorTextPrimary);
+            using var divPen = new Pen(UIHelper.ColorBorderLight);
+            g.DrawString(title, UIHelper.FontHeaderLarge, brush, 20, 20);
+            g.DrawLine(divPen, 0, 54, panelWidth, 54);
+        }
+
+        private void DrawNoData(Graphics g, int panelWidth, int panelHeight)
+        {
+            const string msg = "Chưa có dữ liệu thống kê";
+            g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
+            using var brush = new SolidBrush(UIHelper.ColorMuted);
+            SizeF sz = g.MeasureString(msg, UIHelper.FontBase);
+            g.DrawString(msg, UIHelper.FontBase, brush,
+                (panelWidth - sz.Width) / 2,
+                (panelHeight - sz.Height) / 2);
+        }
+
+        /// <summary>Tạo GraphicsPath hình chữ nhật bo góc, dùng chung cho card border và swatch.</summary>
         private GraphicsPath GetRoundedRect(Rectangle bounds, int radius)
         {
             int diameter = radius * 2;
-            Size size = new Size(diameter, diameter);
-            Rectangle arc = new Rectangle(bounds.Location, size);
-            GraphicsPath path = new GraphicsPath();
+            var arc = new Rectangle(bounds.Location, new Size(diameter, diameter));
+            var path = new GraphicsPath();
 
-            if (radius == 0)
-            {
-                path.AddRectangle(bounds);
-                return path;
-            }
+            if (radius == 0) { path.AddRectangle(bounds); return path; }
 
             path.AddArc(arc, 180, 90);
             arc.X = bounds.Right - diameter;
@@ -360,409 +941,6 @@ namespace TaskFlowManagement.WinForms.Forms
             path.AddArc(arc, 90, 90);
             path.CloseFigure();
             return path;
-        }
-
-        private void PnlPieChart_Paint(object sender, PaintEventArgs e)
-        {
-            var g = e.Graphics;
-            g.SmoothingMode = SmoothingMode.AntiAlias;
-            g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
-
-            DrawPanelTitle(g, pnlPieChart.Width, "Thống kê trạng thái Công việc (" + (_currentOverview?.TotalTasks ?? 0) + " tasks)");
-
-            if (_currentOverview == null || !_currentOverview.StatusSummaries.Any(x => x.Count > 0))
-            {
-                DrawNoData(g, pnlPieChart.Width, pnlPieChart.Height);
-                return;
-            }
-
-            var totalTasks = _currentOverview.StatusSummaries.Sum(s => s.Count);
-            if (totalTasks == 0) return;
-
-            int padding = 40;
-            // Draw Legend at the right if layout allows, otherwise at bottom
-            int legendAreaHeight = 150;
-            int chartSize = Math.Min(pnlPieChart.Width / 2 - padding, pnlPieChart.Height - 80);
-            if (chartSize < 100) chartSize = Math.Min(pnlPieChart.Width - padding * 2, pnlPieChart.Height - (60 + legendAreaHeight));
-            if (chartSize < 50) chartSize = 50; 
-
-            // Canh trái một chút để nhường chỗ cho Legend bên phải
-            var rect = new Rectangle(padding + 20, 80, chartSize, chartSize);
-            float currentAngle = -90f; 
-            
-            foreach (var status in _currentOverview.StatusSummaries)
-            {
-                if (status.Count == 0) continue;
-                float sweepAngle = (status.Count / (float)totalTasks) * 360f;
-                using (var brush = new SolidBrush(ColorTranslator.FromHtml(status.ColorHex)))
-                    g.FillPie(brush, rect, currentAngle, sweepAngle);
-                currentAngle += sweepAngle;
-            }
-
-            // Donut Chart: Lỗ ở giữa lớn hơn để tạo phong cách hiện đại
-            int holeSize = (int)(chartSize * 0.65);
-            var holeRect = new Rectangle(rect.X + (chartSize - holeSize) / 2, rect.Y + (chartSize - holeSize) / 2, holeSize, holeSize);
-            using (var brush = new SolidBrush(UIHelper.ColorSurface)) g.FillEllipse(brush, holeRect);
-            
-            // Draw Legend (Bên phải biểu đồ)
-            int ledgY = 80;
-            int ledgX = rect.Right + 50;
-            float currentColumnMaxWidth = 0;
-
-            foreach (var status in _currentOverview.StatusSummaries.Where(s => s.Count > 0))
-            {
-                string legendText = $"{status.StatusName} ({status.Count})";
-                SizeF textSize = g.MeasureString(legendText, UIHelper.FontBase);
-                
-                float entryWidth = 15 + 10 + textSize.Width + 20;
-                if (entryWidth > currentColumnMaxWidth) currentColumnMaxWidth = entryWidth;
-
-                // Box chú thích bo góc
-                var legendPathRect = new Rectangle(ledgX, ledgY, 16, 16);
-                using (var brush = new SolidBrush(ColorTranslator.FromHtml(status.ColorHex)))
-                using (var path = GetRoundedRect(legendPathRect, 4))
-                {
-                    g.FillPath(brush, path);
-                }
-
-                using (var textBrush = new SolidBrush(UIHelper.ColorDark))
-                    g.DrawString(legendText, UIHelper.FontBase, textBrush, ledgX + 25, ledgY - 1);
-
-                ledgY += 28;
-                if (ledgY > pnlPieChart.Height - 40)
-                {
-                    ledgY = 80;
-                    ledgX += (int)currentColumnMaxWidth;
-                    currentColumnMaxWidth = 0;
-                }
-            }
-        }
-
-        // ══════════════════════════════════════════════════════════════════
-        // TAB 2: PROGRESS BARS 
-        // ══════════════════════════════════════════════════════════════════
-        private void PnlProgressChart_Paint(object sender, PaintEventArgs e)
-        {
-            var g = e.Graphics;
-            g.SmoothingMode = SmoothingMode.AntiAlias;
-
-            g.TranslateTransform(pnlProgressChart.AutoScrollPosition.X, pnlProgressChart.AutoScrollPosition.Y);
-            DrawPanelTitle(g, Math.Max(pnlProgressChart.Width, pnlProgressChart.AutoScrollMinSize.Width), "Tiến độ Thực tế Dự án (%)");
-
-            if (_currentProgress == null || !_currentProgress.Any())
-            {
-                DrawNoData(g, pnlProgressChart.Width, pnlProgressChart.Height);
-                return;
-            }
-
-            int startY = 80;
-            int margin = 30;
-            int barHeight = 25;
-            // Sử dụng ClientSize.Width thay vì Width để trừ đi thanh cuộn (Scrollbar)
-            // Trừ 200px tên dự án, trừ margin*2, và trừ thêm 60px dự phòng cho chữ số % (Padding & Kích thước text lớn nhất 100%)
-            int maxWidth = pnlProgressChart.ClientSize.Width - margin * 2 - 200 - 60; 
-            if (maxWidth < 100) maxWidth = 100;
-
-            int rowIndex = 0;
-            foreach(var proj in _currentProgress)
-            {
-                // Hover highlight
-                if (rowIndex == _hoverProgressIndex)
-                {
-                    using var hoverBrush = new SolidBrush(Color.FromArgb(10, 0, 0, 0));
-                    g.FillRectangle(hoverBrush, margin - 15, startY - 5, pnlProgressChart.ClientSize.Width - margin * 2 + 30, 60);
-                }
-                
-                // Border line under
-                using (var borderPen = new Pen(UIHelper.ColorBorderLight))
-                {
-                    g.DrawLine(borderPen, margin, startY + 50, pnlProgressChart.ClientSize.Width - margin, startY + 50);
-                }
-
-                // Text Dự án
-                using (var fontBrush = new SolidBrush(UIHelper.ColorHeaderBg))
-                {
-                    string pName = proj.ProjectName.Length > 25 ? proj.ProjectName.Substring(0, 22) + "..." : proj.ProjectName;
-                    g.DrawString(pName, UIHelper.FontGridHeader, fontBrush, margin + 15, startY);
-                }
-
-                // Vẽ Khung Bar nền
-                int barX = margin + 200;
-                var bgRect = new Rectangle(barX, startY, maxWidth, barHeight);
-                using (var bgBrush = new SolidBrush(UIHelper.ColorBorderLight))
-                {
-                    g.FillRectangle(bgBrush, bgRect);
-                }
-
-                // Màu Progress phụ thuộc vào trạng thái
-                Color progressColor = UIHelper.ColorPrimary;
-                if (proj.AvgProgress >= 100) progressColor = UIHelper.ColorSuccess;
-                else if (proj.Status == "OnHold" || proj.Status == "Delayed") progressColor = UIHelper.ColorWarning;
-
-                // Vẽ Lõi Progress bằng LinearGradientBrush (Gradient fill)
-                int fillWidth = (int)(maxWidth * (proj.AvgProgress / 100));
-                if (fillWidth > 0)
-                {
-                    var fillRect = new Rectangle(barX, startY, fillWidth, barHeight);
-                    Color lightColor = ControlPaint.Light(progressColor, 0.4f);
-                    using (var fillBrush = new LinearGradientBrush(fillRect, progressColor, lightColor, LinearGradientMode.Horizontal))
-                    {
-                        g.FillRectangle(fillBrush, fillRect);
-                    }
-                }
-
-                // Vẽ Nhãn % vào trên thanh với Bounding Box và Padding >= 5px, luôn hiển thị ngay cả khi progress == 0
-                using (var textBrush = new SolidBrush(UIHelper.ColorDark))
-                {
-                    string pctText = Math.Round(proj.AvgProgress, 1) + "%";
-                    g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
-                    
-                    // Sử dụng UIHelper.FontBase theo yêu cầu để nhất quán
-                    SizeF textSize = g.MeasureString(pctText, UIHelper.FontBase); 
-                    
-                    // Tính tọa độ động dựa trên MeasureString và đảm bảo text thụt cách lõi/ba 5px (Padding = 5px)
-                    float textX = barX + fillWidth + 5; 
-                    float textY = startY + (barHeight - textSize.Height) / 2;
-                    g.DrawString(pctText, UIHelper.FontBase, textBrush, textX, textY);
-                }
-                
-                // Vẽ số task bên dưới một chút
-                using (var muteBrush = new SolidBrush(UIHelper.ColorMuted))
-                {
-                    g.DrawString($"{proj.CompletedTasks}/{proj.TotalTasks} tasks xong", UIHelper.FontSmall, muteBrush, margin + 15, startY + 20);
-                }
-
-                startY += 60; // Row spacing
-                rowIndex++;
-            }
-            
-            int totalHeight = startY + 20;
-            if (pnlProgressChart.AutoScrollMinSize.Height != totalHeight)
-            {
-                pnlProgressChart.AutoScrollMinSize = new Size(0, totalHeight);
-            }
-        }
-
-        // ══════════════════════════════════════════════════════════════════
-        // TAB 3: BUDGET BAR CHART (So sánh Actual vs Budget)
-        // ══════════════════════════════════════════════════════════════════
-        private void PnlBudgetChart_Paint(object sender, PaintEventArgs e)
-        {
-            var g = e.Graphics;
-            g.SmoothingMode = SmoothingMode.AntiAlias;
-
-            DrawPanelTitle(g, pnlBudgetChart.Width, "Thống kê Ngân sách Thực tế (Budget vs Expenses)");
-
-            if (_currentBudget == null || !_currentBudget.Any())
-            {
-                DrawNoData(g, pnlBudgetChart.Width, pnlBudgetChart.Height);
-                return;
-            }
-
-            int paddingSide = 80;
-            int startY = pnlBudgetChart.Height - 50;
-            int chartHeight = pnlBudgetChart.Height - 150;
-            
-            decimal maxVal = _currentBudget.Max(b => Math.Max(b.Budget, b.TotalExpense));
-            if (maxVal == 0) maxVal = 1000; // Tránh chia 0
-            
-            // Vẽ Grid mờ (Lines)
-            using (var pen = new Pen(UIHelper.ColorBorderLight))
-            using (var brush = new SolidBrush(UIHelper.ColorMuted))
-            {
-                g.DrawLine(pen, paddingSide, startY, pnlBudgetChart.Width - 40, startY); // Trục X
-                g.DrawLine(pen, paddingSide, startY, paddingSide, startY - chartHeight); // Trục Y
-                
-                int steps = 5;
-                for(int i = 0; i <= steps; i++)
-                {
-                    int y = startY - (chartHeight * i / steps);
-                    decimal val = maxVal * i / steps;
-                    string lbl = val >= 1000000 ? (val/1000000).ToString("0.#M") : (val/1000).ToString("0.#k");
-                    
-                    var sf = new StringFormat{ Alignment = StringAlignment.Far };
-                    g.DrawString(lbl, UIHelper.FontSmall, brush, new RectangleF(0, y - 8, paddingSide - 10, 20), sf);
-                    if (i > 0) g.DrawLine(pen, paddingSide, y, pnlBudgetChart.Width - 40, y); 
-                }
-            }
-
-            // Tính toán bề rộng cột cứng để đảm bảo hiển thị đẹp 5-7 mục
-            int visibleColumns = 5;
-            int maxBudgetCount = Math.Max(1, _currentBudget.Count);
-            int totalDisplayWidth = pnlBudgetChart.ClientSize.Width - paddingSide - 40;
-            // Ép minimum width cho mỗi cặp cột. Nếu ít điểm hơn 5 thì cho giãn đều.
-            int pairWidth = Math.Max(totalDisplayWidth / visibleColumns, totalDisplayWidth / maxBudgetCount);
-            int barWidth = pairWidth / 2 - 10;
-            if (barWidth > 40) barWidth = 40; // Giói hạn độ dày tối đa
-
-            // Tính toán tổng width cần thiết để bật thanh cuộn (Scrollbar ngang)
-            int totalRequiredWidth = paddingSide + (_currentBudget.Count * pairWidth) + 40;
-            if (pnlBudgetChart.AutoScrollMinSize.Width != totalRequiredWidth)
-                pnlBudgetChart.AutoScrollMinSize = new Size(totalRequiredWidth, 0);
-
-            // Bắt đầu dịch chuyển trục Toạ độ X để CUỘN
-            var state = g.Save();
-            
-            // Đặt vùng Clip để không vẽ tràn qua Y-Axis bên trái
-            Rectangle clipRect = new Rectangle(paddingSide + 1, 0, pnlBudgetChart.Width - paddingSide, pnlBudgetChart.Height);
-            g.SetClip(clipRect);
-            
-            g.TranslateTransform(pnlBudgetChart.AutoScrollPosition.X, 0);
-
-            int currentX = paddingSide + 20;
-
-            foreach (var b in _currentBudget)
-            {
-                // Cột Ngân sách định mức (Xanh biếc với Gradient)
-                int hBudget = (int)(chartHeight * (b.Budget / maxVal));
-                var rectBudget = new Rectangle(currentX, startY - hBudget, barWidth, hBudget);
-                Color blueColor = Color.FromArgb(59, 130, 246);
-                if (hBudget > 0)
-                {
-                    using (var brush = new LinearGradientBrush(rectBudget, ControlPaint.Light(blueColor, 0.3f), blueColor, LinearGradientMode.Vertical))
-                        g.FillRectangle(brush, rectBudget);
-                }
-
-                // Cột Chi phí thực tế (Xanh lá, Đỏ nếu vượt - với Gradient)
-                int hExpense = (int)(chartHeight * (b.TotalExpense / maxVal));
-                var rectExpense = new Rectangle(currentX + barWidth + 2, startY - hExpense, barWidth, hExpense);
-                Color expColor = b.TotalExpense > b.Budget ? Color.FromArgb(185, 28, 28) : UIHelper.ColorSuccess;
-                if (hExpense > 0)
-                {
-                    using (var brush = new LinearGradientBrush(rectExpense, ControlPaint.Light(expColor, 0.3f), expColor, LinearGradientMode.Vertical))
-                        g.FillRectangle(brush, rectExpense);
-                }
-
-                // Thông báo % dùng
-                using (var strBrush = new SolidBrush(UIHelper.ColorMuted))
-                {
-                    string uPct = $"{b.UsagePercentage}%";
-                    g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
-                    SizeF textSize = g.MeasureString(uPct, UIHelper.FontLabel);
-                    
-                    float xPos = currentX + (barWidth * 2 + 2 - textSize.Width) / 2;
-                    float yPos = startY - Math.Max(hBudget, hExpense) - textSize.Height - 5;
-                    g.DrawString(uPct, UIHelper.FontLabel, strBrush, xPos, yPos);
-                }
-
-                // Trục X (Tên Dự án) - Xoay Label Góc -45 độ
-                using (var strBrush = new SolidBrush(UIHelper.ColorMuted))
-                {
-                    string label = b.ProjectName;
-                    if (label.Length > 25) label = label.Substring(0, 22) + "..."; // Chữ dài hơn nhờ ko bị đè
-                    
-                    g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
-                    float midBarX = currentX + (barWidth * 2 + 2) / 2f;
-                    
-                    // Thực hiện Rotate Transform
-                    g.TranslateTransform(midBarX, startY + 15);
-                    g.RotateTransform(-45f);
-                    
-                    g.DrawString(label, UIHelper.FontSmall, strBrush, 0, 0);
-                    
-                    // Phục hồi lại để tiếp tục vẽ
-                    g.RotateTransform(45f);
-                    g.TranslateTransform(-midBarX, -(startY + 15));
-                }
-
-                currentX += pairWidth;
-            }
-
-            // Restore loại bỏ Translate và Clip để vẽ Legend
-            g.Restore(state);
-
-            // Legend cho Budget (cũng vuông góc bo tròn)
-            int legX = pnlBudgetChart.Width - 250;
-            
-            using (var b1 = new SolidBrush(Color.FromArgb(59, 130, 246))) 
-            using (var path1 = GetRoundedRect(new Rectangle(legX, 20, 16, 16), 4)) g.FillPath(b1, path1);
-            
-            using (var b2 = new SolidBrush(UIHelper.ColorSuccess)) 
-            using (var path2 = GetRoundedRect(new Rectangle(legX, 45, 16, 16), 4)) g.FillPath(b2, path2);
-            
-            using (var b3 = new SolidBrush(Color.FromArgb(185, 28, 28))) 
-            using (var path3 = GetRoundedRect(new Rectangle(legX, 70, 16, 16), 4)) g.FillPath(b3, path3);
-            
-            using (var textBrush = new SolidBrush(UIHelper.ColorHeaderBg))
-            {
-                g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
-                g.DrawString("Ngân sách (Budget)", UIHelper.FontBase, textBrush, legX + 25, 19);
-                g.DrawString("Chi phí thực tế (An toàn)", UIHelper.FontBase, textBrush, legX + 25, 44);
-                g.DrawString("Chi phí thực tế (Vượt quỹ)", UIHelper.FontBase, textBrush, legX + 25, 69);
-            }
-        }
-
-        // ══════════════════════════════════════════════════════════════════
-        // HELPERS
-        // ══════════════════════════════════════════════════════════════════
-        private void DrawPanelTitle(Graphics g, int width, string title)
-        {
-            g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
-            using (var brush = new SolidBrush(UIHelper.ColorHeaderBg))
-                g.DrawString(title, UIHelper.FontHeaderLarge, brush, 20, 20);
-            using (var pen = new Pen(UIHelper.ColorBorderLight))
-                g.DrawLine(pen, 0, 50, width, 50);
-        }
-
-        private void DrawNoData(Graphics g, int width, int height)
-        {
-            using (var brush = new SolidBrush(UIHelper.ColorMuted))
-            {
-                string msg = "Chưa có dữ liệu thống kê";
-                g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
-                var size = g.MeasureString(msg, UIHelper.FontBase);
-                g.DrawString(msg, UIHelper.FontBase, brush, (width - size.Width) / 2, (height - size.Height) / 2);
-            }
-        }
-
-        // ══════════════════════════════════════════════════════════════════
-        // GĐ9: MỞ BÁO CÁO TỔNG KỎT TỪ DASHBOARD
-        // ══════════════════════════════════════════════════════════════════
-
-        /// <summary>
-        /// Mở frmReportViewer từ Dashboard.
-        /// - Nếu đang chọn một dự án cụ thể trên cboProject → truyền projectId.
-        /// - Nếu chọn "Toàn bộ hệ thống" → truyền null (báo cáo tổng hợp).
-        /// Luồng: WaitCursor → khởi tạo form → Default cursor → ShowDialog → finally reset.
-        /// Điều kiện gọi: chỉ khi AppSession.IsAdmin || AppSession.IsManager (kiểm tra tại SetupUI).
-        /// </summary>
-        private async Task OpenDashboardReportAsync()
-        {
-            try
-            {
-                // 1. Hiển thị WaitCursor
-                this.Cursor = Cursors.WaitCursor;
-                Application.DoEvents();
-
-                // 2. Lấy projectId từ ComboBox Dashboard
-                int? selectedProjectId = null;
-                if (cboProject.SelectedItem != null)
-                {
-                    var selId = (int)((dynamic)cboProject.SelectedItem).Id;
-                    if (selId > 0) selectedProjectId = selId;
-                }
-
-                // 3. Khởi tạo frmReportViewer – _expenseService đã được inject qua DI
-                using var reportForm = new frmReportViewer(_expenseService, selectedProjectId);
-
-                // 4. Trả về Default cursor trước khi hiện dialog
-                this.Cursor = Cursors.Default;
-                reportForm.ShowDialog(this);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(
-                    $"Không thể mở cửa sổ báo cáo:\n\n{ex.Message}",
-                    "Lỗi Báo cáo",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error
-                );
-            }
-            finally
-            {
-                // 5. Luôn khôi phục cursor
-                this.Cursor = Cursors.Default;
-            }
         }
     }
 }

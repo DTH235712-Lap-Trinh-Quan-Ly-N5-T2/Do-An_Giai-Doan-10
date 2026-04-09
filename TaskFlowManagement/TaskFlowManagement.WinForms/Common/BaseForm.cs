@@ -26,18 +26,23 @@ namespace TaskFlowManagement.WinForms.Common
             // Anti-flicker: bật double buffering ngay từ constructor
             this.SetStyle(
                 ControlStyles.OptimizedDoubleBuffer |
-                ControlStyles.AllPaintingInWmPaint  |
+                ControlStyles.AllPaintingInWmPaint |
                 ControlStyles.UserPaint,
                 true);
             this.UpdateStyles();
 
-            // Đặt font & background mặc định nhất quán
-            this.Font      = UIHelper.FontBase;
-            this.BackColor = UIHelper.ColorSurface;
-
-            // Chuẩn hóa DPI scaling
+            // Chuẩn hóa DPI scaling — an toàn ở mọi context
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
-            this.AutoScaleMode       = AutoScaleMode.Font;
+            this.AutoScaleMode = AutoScaleMode.Font;
+
+            // FIX: UIHelper.FontBase / ColorSurface chỉ gán lúc runtime.
+            // Lúc Designer load, LicenseManager.UsageMode == Designtime
+            // → assembly chưa được build đầy đủ → gọi UIHelper ở đây gây crash Designer.
+            if (!IsInDesignMode())
+            {
+                this.Font = UIHelper.FontBase;
+                this.BackColor = UIHelper.ColorSurface;
+            }
         }
 
         /// <summary>
@@ -53,5 +58,15 @@ namespace TaskFlowManagement.WinForms.Common
                 return cp;
             }
         }
+
+        /// <summary>
+        /// Kiểm tra an toàn hơn <see cref="Component.DesignMode"/>:
+        /// DesignMode built-in chỉ trả về true khi control đã được add vào
+        /// designer surface — constructor chạy TRƯỚC lúc đó nên luôn false.
+        /// LicenseManager.UsageMode là cách duy nhất đáng tin trong constructor.
+        /// </summary>
+        private static bool IsInDesignMode()
+            => System.ComponentModel.LicenseManager.UsageMode
+               == System.ComponentModel.LicenseUsageMode.Designtime;
     }
 }

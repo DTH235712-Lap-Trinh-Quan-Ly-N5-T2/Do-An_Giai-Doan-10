@@ -1,7 +1,3 @@
-// ============================================================
-//  frmProjects.cs  (REFACTORED)
-//  TaskFlowManagement.WinForms.Forms
-// ============================================================
 using TaskFlowManagement.Core.Entities;
 using TaskFlowManagement.Core.Interfaces;
 using TaskFlowManagement.Core.Interfaces.Services;
@@ -11,23 +7,22 @@ namespace TaskFlowManagement.WinForms.Forms
 {
     public partial class frmProjects : BaseForm
     {
-        // ── Dependencies ──────────────────────────────────────────────────────
+        // ── Dependencies ──────────────────────────────────────────
         private readonly IProjectService _projectService;
         private readonly IUserService _userService;
         private readonly ITaskService _taskService;
         private readonly ICustomerRepository _customerRepo;
 
-        // ── State ─────────────────────────────────────────────────────────────
+        // ── State ─────────────────────────────────────────────────
         private List<Project> _allProjects = new();
         private Project? _selectedProject;
 
-        // ── Constructor rỗng: CHỈ dùng cho WinForms Designer ─────────────────
+        [Obsolete("Chỉ dùng cho WinForms Designer")]
         public frmProjects()
         {
             InitializeComponent();
         }
 
-        // ── DI Constructor: dùng khi chạy thật ───────────────────────────────
         public frmProjects(
             IProjectService projectService,
             IUserService userService,
@@ -44,20 +39,21 @@ namespace TaskFlowManagement.WinForms.Forms
             SetupPermissions();
         }
 
-        // ── Tất cả UIHelper / bx loop / CreateStatusBar tách khỏi Designer ───
+        // ── Khởi tạo giao diện ────────────────────────────────────
+
         private void ApplyClientStyles()
         {
-            // ── panelTop ──────────────────────────────────────────────────────
+            // Header
             panelTop.BackColor = UIHelper.ColorHeaderBg;
             lblHeader.Font = UIHelper.FontHeaderLarge;
             lblHeader.ForeColor = UIHelper.ColorHeaderFg;
 
-            // ── panelFilter ───────────────────────────────────────────────────
-            panelFilter.BackColor = UIHelper.ColorBackground;
-            txtSearch.Font = UIHelper.FontSmall;
-            cboFilterStatus.Font = UIHelper.FontSmall;
+            // Toolbar — nền nhạt, chứa cả search lẫn action buttons
+            panelToolbar.BackColor = UIHelper.ColorBackground;
 
-            // Items của cboFilterStatus — không được phép trong Designer
+            txtSearch.Font = UIHelper.FontSmall;
+
+            UIHelper.StyleFilterCombo(cboFilterStatus);
             cboFilterStatus.Items.Clear();
             cboFilterStatus.Items.AddRange(new object[]
             {
@@ -67,35 +63,33 @@ namespace TaskFlowManagement.WinForms.Forms
             cboFilterStatus.SelectedIndex = 0;
 
             UIHelper.StyleButton(btnRefresh, UIHelper.ButtonVariant.Secondary);
-            btnRefresh.Text = "🔄 Làm mới";
 
-            // ── panelToolbar ──────────────────────────────────────────────────
-            panelToolbar.BackColor = UIHelper.ColorSurface;
+            // Nhóm nút chức năng
+            UIHelper.StyleButton(btnAdd, UIHelper.ButtonVariant.Primary);
+            UIHelper.StyleButton(btnEdit, UIHelper.ButtonVariant.Success);
+            UIHelper.StyleButton(btnDelete, UIHelper.ButtonVariant.Danger);
+            UIHelper.StyleButton(btnStatus, UIHelper.ButtonVariant.Warning);
+            UIHelper.StyleButton(btnMembers, UIHelper.ButtonVariant.Purple);
+            UIHelper.StyleButton(btnDetail, UIHelper.ButtonVariant.Slate);
+            UIHelper.StyleButton(btnKanban, UIHelper.ButtonVariant.Info);
 
-            int bx = 14, by = 9, bg = 6, bh = 34;
-            UIHelper.StyleToolButton(btnAdd, "➕ Thêm mới", UIHelper.ButtonVariant.Primary, bx, by, 110, bh); bx += 110 + bg;
-            UIHelper.StyleToolButton(btnEdit, "✏️  Sửa", UIHelper.ButtonVariant.Success, bx, by, 80, bh); bx += 80 + bg;
-            UIHelper.StyleToolButton(btnDelete, "🗑️  Xóa", UIHelper.ButtonVariant.Danger, bx, by, 80, bh); bx += 80 + bg;
-            UIHelper.StyleToolButton(btnStatus, "🔄 Trạng thái", UIHelper.ButtonVariant.Warning, bx, by, 120, bh); bx += 120 + bg;
-            UIHelper.StyleToolButton(btnMembers, "👥 Thành viên", UIHelper.ButtonVariant.Purple, bx, by, 120, bh); bx += 120 + bg;
-            UIHelper.StyleToolButton(btnDetail, "📋 Chi tiết", UIHelper.ButtonVariant.Slate, bx, by, 100, bh); bx += 100 + bg;
-            UIHelper.StyleToolButton(btnKanban, "🗂 Kanban", UIHelper.ButtonVariant.Info, bx, by, 110, bh); bx += 110 + bg;
-
-            lblCount.Font = UIHelper.FontSmall;
-            lblCount.ForeColor = UIHelper.ColorMuted;
-            lblCount.Location = new Point(bx, by);
-            lblCount.Size = new Size(140, bh);
-
-            // ── DataGridView ──────────────────────────────────────────────────
+            // DataGridView
             UIHelper.StyleDataGridView(dgvProjects);
             UIHelper.ApplyAlternateRowColors(dgvProjects);
 
-            // ── Status bar ────────────────────────────────────────────────────
-            (panelStatus, lblStatus) = UIHelper.CreateStatusBar();
-            this.Controls.Add(panelStatus);
+            colMembers.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            colDeadline.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            colStartDate.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            colBudget.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
+
+            // Status bar
+            panelStatus.BackColor = UIHelper.ColorHeaderBg;
+            lblStatus.Font = UIHelper.FontSmall;
+            lblStatus.ForeColor = UIHelper.ColorSubtitle;
         }
 
-        // ── Permissions ───────────────────────────────────────────────────────
+        // ── Permissions ───────────────────────────────────────────
+
         private void SetupPermissions()
         {
             bool canEdit = AppSession.IsManager;
@@ -105,14 +99,16 @@ namespace TaskFlowManagement.WinForms.Forms
             btnStatus.Visible = canEdit;
         }
 
-        // ── Form Load ─────────────────────────────────────────────────────────
+        // ── Form Load ─────────────────────────────────────────────
+
         protected override async void OnLoad(EventArgs e)
         {
             base.OnLoad(e);
             await LoadProjectsAsync();
         }
 
-        // ── Data Loading ──────────────────────────────────────────────────────
+        // ── Data Loading ──────────────────────────────────────────
+
         private async Task LoadProjectsAsync()
         {
             SetStatus("⏳ Đang tải...");
@@ -133,12 +129,14 @@ namespace TaskFlowManagement.WinForms.Forms
             catch (Exception ex)
             {
                 SetStatus("⚠ Lỗi tải dữ liệu.");
-                MessageBox.Show($"Không thể tải danh sách dự án:\n{ex.Message}",
+                MessageBox.Show(
+                    $"Không thể tải danh sách dự án:\n{ex.Message}",
                     "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
-        // ── Filter / Bind ─────────────────────────────────────────────────────
+        // ── Filter / Bind ─────────────────────────────────────────
+
         private void ApplyFilter()
         {
             var keyword = txtSearch.Text.Trim().ToLowerInvariant();
@@ -171,8 +169,7 @@ namespace TaskFlowManagement.WinForms.Forms
                 var statusText = UIHelper.FormatProjectStatus(p.Status);
                 var deadline = p.PlannedEndDate.HasValue
                     ? p.PlannedEndDate.Value.ToString("dd/MM/yyyy") : "—";
-                var budget = p.Budget > 0
-                    ? p.Budget.ToString("N0") + " ₫" : "—";
+                var budget = p.Budget > 0 ? p.Budget.ToString("N0") + " ₫" : "—";
                 var memberCount = p.Members?.Count(m => m.LeftAt == null) ?? 0;
 
                 int idx = dgvProjects.Rows.Add(
@@ -187,10 +184,11 @@ namespace TaskFlowManagement.WinForms.Forms
                 UIHelper.ApplyProjectRowStyle(dgvProjects.Rows[idx], p.Status, p.PlannedEndDate);
             }
 
-            lblCount.Text = $"{projects.Count} dự án";
+            SetStatus($"✅ Tổng: {projects.Count} dự án");
         }
 
-        // ── Selection ─────────────────────────────────────────────────────────
+        // ── Selection ─────────────────────────────────────────────
+
         private void dgvProjects_SelectionChanged(object sender, EventArgs e)
         {
             if (dgvProjects.SelectedRows.Count == 0)
@@ -216,7 +214,8 @@ namespace TaskFlowManagement.WinForms.Forms
             btnKanban.Enabled = sel;
         }
 
-        // ── CRUD Actions ──────────────────────────────────────────────────────
+        // ── CRUD Actions ──────────────────────────────────────────
+
         private async void btnAdd_Click(object sender, EventArgs e)
         {
             using var dlg = new frmProjectEdit(_projectService, _userService, _customerRepo, null);
@@ -261,7 +260,8 @@ namespace TaskFlowManagement.WinForms.Forms
             }
         }
 
-        // ── Status Change ─────────────────────────────────────────────────────
+        // ── Status Change ─────────────────────────────────────────
+
         private ContextMenuStrip? _statusMenu;
 
         private async void btnStatus_Click(object sender, EventArgs e)
@@ -287,6 +287,7 @@ namespace TaskFlowManagement.WinForms.Forms
                         else MessageBox.Show(msg, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     };
                 }
+
                 menu.Show(btnStatus, new Point(0, btnStatus.Height));
             }
             finally
@@ -295,7 +296,8 @@ namespace TaskFlowManagement.WinForms.Forms
             }
         }
 
-        // ── Members ───────────────────────────────────────────────────────────
+        // ── Members ───────────────────────────────────────────────
+
         private async void btnMembers_Click(object sender, EventArgs e)
         {
             if (_selectedProject == null) return;
@@ -304,25 +306,33 @@ namespace TaskFlowManagement.WinForms.Forms
             await LoadProjectsAsync();
         }
 
-        // ── Kanban ────────────────────────────────────────────────────────────
+        // ── Kanban ────────────────────────────────────────────────
+
         private void btnKanban_Click(object sender, EventArgs e)
         {
             if (_selectedProject == null)
             {
-                MessageBox.Show("Vui lòng chọn một dự án để xem Kanban Board.",
+                MessageBox.Show(
+                    "Vui lòng chọn một dự án để xem Kanban Board.",
                     "Chưa chọn dự án", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
+
             using var dlg = new frmKanban(_taskService, _projectService, _userService, _selectedProject.Id);
             dlg.ShowDialog(this);
         }
 
-        // ── Detail ────────────────────────────────────────────────────────────
+        // ── Detail ────────────────────────────────────────────────
+
         private async void btnDetail_Click(object sender, EventArgs e)
         {
             if (_selectedProject == null) return;
             var detail = await _projectService.GetProjectDetailsAsync(_selectedProject.Id);
-            if (detail == null) { MessageBox.Show("Không tìm thấy dự án.", "Lỗi"); return; }
+            if (detail == null)
+            {
+                MessageBox.Show("Không tìm thấy dự án.", "Lỗi");
+                return;
+            }
 
             var memberCount = detail.Members?.Count(m => m.LeftAt == null) ?? 0;
             var taskCount = detail.Tasks?.Count ?? 0;
@@ -352,7 +362,8 @@ namespace TaskFlowManagement.WinForms.Forms
             MessageBox.Show(info, "Chi tiết dự án", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
-        // ── Filter & Refresh Events ───────────────────────────────────────────
+        // ── Filter & Refresh Events ───────────────────────────────
+
         private void txtSearch_TextChanged(object sender, EventArgs e) => ApplyFilter();
         private void cboFilterStatus_SelectedIndexChanged(object sender, EventArgs e) => ApplyFilter();
         private async void btnRefresh_Click(object sender, EventArgs e) => await LoadProjectsAsync();
@@ -364,7 +375,8 @@ namespace TaskFlowManagement.WinForms.Forms
             else btnDetail_Click(sender, e);
         }
 
-        // ── Status Bar ────────────────────────────────────────────────────────
+        // ── Status Bar ────────────────────────────────────────────
+
         private void SetStatus(string msg) => lblStatus.Text = msg;
     }
 }

@@ -2,7 +2,7 @@ using TaskFlowManagement.WinForms.Common;
 
 namespace TaskFlowManagement.WinForms.Forms
 {
-    partial class frmHome   // BaseForm declared in frmHome.cs
+    partial class frmHome   // BaseForm khai báo trong frmHome.cs
     {
         private System.ComponentModel.IContainer components = null;
 
@@ -14,13 +14,15 @@ namespace TaskFlowManagement.WinForms.Forms
 
         private void InitializeComponent()
         {
-            // ── Instantiation ──────────────────────────────────────────────────────
+            // ── Khởi tạo controls ────────────────────────────────────────────────────
             panelHeader = new Panel();
             panelAccentLine = new Panel();
             lblHeader = new Label();
 
             panelBody = new Panel();
+
             panelWelcome = new Panel();
+            tblWelcome = new TableLayoutPanel();
             lblGreeting = new Label();
             lblRole = new Label();
             lblLastLogin = new Label();
@@ -29,29 +31,37 @@ namespace TaskFlowManagement.WinForms.Forms
             flowCards = new FlowLayoutPanel();
             lblNote = new Label();
 
+            // Card 1 — Dự án đang chạy
             panelCard1 = new Panel();
             panelCard1Top = new Panel();
+            tblCard1 = new TableLayoutPanel();
             lblCard1Icon = new Label();
             lblCard1Title = new Label();
             lblStatProjects = new Label();
             lblCard1Sub = new Label();
 
+            // Card 2 — Công việc của tôi
             panelCard2 = new Panel();
             panelCard2Top = new Panel();
+            tblCard2 = new TableLayoutPanel();
             lblCard2Icon = new Label();
             lblCard2Title = new Label();
             lblStatTasks = new Label();
             lblCard2Sub = new Label();
 
+            // Card 3 — Quá hạn
             panelCard3 = new Panel();
             panelCard3Top = new Panel();
+            tblCard3 = new TableLayoutPanel();
             lblCard3Icon = new Label();
             lblCard3Title = new Label();
             lblStatOverdue = new Label();
             lblCard3Sub = new Label();
 
+            // Card 4 — Hoàn thành tháng này
             panelCard4 = new Panel();
             panelCard4Top = new Panel();
+            tblCard4 = new TableLayoutPanel();
             lblCard4Icon = new Label();
             lblCard4Title = new Label();
             lblStatDone = new Label();
@@ -60,10 +70,22 @@ namespace TaskFlowManagement.WinForms.Forms
             panelHeader.SuspendLayout();
             panelBody.SuspendLayout();
             panelWelcome.SuspendLayout();
+            tblWelcome.SuspendLayout();
             panelStats.SuspendLayout();
+            flowCards.SuspendLayout();
+            panelCard1.SuspendLayout();
+            tblCard1.SuspendLayout();
+            panelCard2.SuspendLayout();
+            tblCard2.SuspendLayout();
+            panelCard3.SuspendLayout();
+            tblCard3.SuspendLayout();
+            panelCard4.SuspendLayout();
+            tblCard4.SuspendLayout();
             this.SuspendLayout();
 
-            // ── panelHeader ────────────────────────────────────────────────────────
+            // ════════════════════════════════════════════════════════════════════════
+            // panelHeader
+            // ════════════════════════════════════════════════════════════════════════
             panelHeader.Dock = DockStyle.Top;
             panelHeader.Height = 58;
             panelHeader.Name = "panelHeader";
@@ -81,38 +103,56 @@ namespace TaskFlowManagement.WinForms.Forms
             lblHeader.Text = "🏠  Trang chủ";
             lblHeader.TextAlign = ContentAlignment.MiddleLeft;
 
-            // ── panelBody ──────────────────────────────────────────────────────────
+            // ════════════════════════════════════════════════════════════════════════
+            // panelBody
+            // ════════════════════════════════════════════════════════════════════════
             panelBody.Dock = DockStyle.Fill;
             panelBody.Name = "panelBody";
             panelBody.Controls.Add(panelStats);
             panelBody.Controls.Add(panelWelcome);
 
-            // ── panelWelcome ───────────────────────────────────────────────────────
+            // ════════════════════════════════════════════════════════════════════════
+            // panelWelcome  →  chứa TableLayoutPanel 3 hàng
+            // ════════════════════════════════════════════════════════════════════════
             panelWelcome.Dock = DockStyle.Top;
-            panelWelcome.Height = 98;
+            panelWelcome.Height = 96;
             panelWelcome.Name = "panelWelcome";
-            panelWelcome.Padding = new Padding(24, 12, 24, 0);
-            panelWelcome.Controls.AddRange(new Control[] { lblGreeting, lblRole, lblLastLogin });
+            panelWelcome.Padding = new Padding(24, 8, 24, 8);
+            panelWelcome.Controls.Add(tblWelcome);
+
+            tblWelcome.Dock = DockStyle.Fill;
+            tblWelcome.Name = "tblWelcome";
+            tblWelcome.ColumnCount = 1;
+            tblWelcome.RowCount = 3;
+            tblWelcome.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            tblWelcome.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));   // lblGreeting
+            tblWelcome.RowStyles.Add(new RowStyle(SizeType.Percent, 28F));   // lblRole
+            tblWelcome.RowStyles.Add(new RowStyle(SizeType.Percent, 22F));   // lblLastLogin
+            tblWelcome.Controls.Add(lblGreeting, 0, 0);
+            tblWelcome.Controls.Add(lblRole, 0, 1);
+            tblWelcome.Controls.Add(lblLastLogin, 0, 2);
 
             lblGreeting.AutoSize = false;
-            lblGreeting.Location = new Point(24, 12);
+            lblGreeting.Dock = DockStyle.Fill;
             lblGreeting.Name = "lblGreeting";
-            lblGreeting.Size = new System.Drawing.Size(900, 38);
             lblGreeting.Text = "Chào buổi sáng, ...! 👋";
+            lblGreeting.TextAlign = ContentAlignment.MiddleLeft;
 
             lblRole.AutoSize = false;
-            lblRole.Location = new Point(26, 54);
+            lblRole.Dock = DockStyle.Fill;
             lblRole.Name = "lblRole";
-            lblRole.Size = new System.Drawing.Size(500, 20);
             lblRole.Text = "Vai trò: ...";
+            lblRole.TextAlign = ContentAlignment.MiddleLeft;
 
             lblLastLogin.AutoSize = false;
-            lblLastLogin.Location = new Point(26, 76);
+            lblLastLogin.Dock = DockStyle.Fill;
             lblLastLogin.Name = "lblLastLogin";
-            lblLastLogin.Size = new System.Drawing.Size(500, 18);
             lblLastLogin.Text = "";
+            lblLastLogin.TextAlign = ContentAlignment.MiddleLeft;
 
-            // ── panelStats ─────────────────────────────────────────────────────────
+            // ════════════════════════════════════════════════════════════════════════
+            // panelStats
+            // ════════════════════════════════════════════════════════════════════════
             panelStats.Dock = DockStyle.Fill;
             panelStats.Name = "panelStats";
             panelStats.Padding = new Padding(20, 16, 20, 8);
@@ -124,7 +164,7 @@ namespace TaskFlowManagement.WinForms.Forms
             flowCards.Name = "flowCards";
             flowCards.WrapContents = true;
             flowCards.Controls.AddRange(new Control[]
-            { panelCard1, panelCard2, panelCard3, panelCard4 });
+                { panelCard1, panelCard2, panelCard3, panelCard4 });
 
             lblNote.AutoSize = false;
             lblNote.Dock = DockStyle.Bottom;
@@ -132,142 +172,221 @@ namespace TaskFlowManagement.WinForms.Forms
             lblNote.Padding = new Padding(4, 0, 0, 8);
             lblNote.Size = new System.Drawing.Size(0, 28);
             lblNote.Text = "ℹ️  Đang tải số liệu...";
+            lblNote.TextAlign = ContentAlignment.MiddleLeft;
 
-            // ── Card 1 — Dự án đang chạy ──────────────────────────────────────────
-            panelCard1.BackColor = System.Drawing.Color.White;
+            // ════════════════════════════════════════════════════════════════════════
+            // Helper cục bộ: cấu hình TableLayoutPanel bên trong card
+            //   Row 0 (Auto)    : panelCardXTop (accent bar 5px)
+            //   Row 1 (Auto)    : header row  — col 0: icon, col 1: tiêu đề
+            //   Row 2 (Percent) : số liệu lớn (span 2 cột)
+            //   Row 3 (Auto)    : sub-text     (span 2 cột)
+            // ════════════════════════════════════════════════════════════════════════
+
+            // ── Card 1 ───────────────────────────────────────────────────────────────
             panelCard1.BorderStyle = BorderStyle.FixedSingle;
             panelCard1.Cursor = Cursors.Hand;
             panelCard1.Name = "panelCard1";
-            // Size & Margin set trong ApplyClientStyles()
-            panelCard1.Controls.AddRange(new Control[]
-            { panelCard1Top, lblCard1Icon, lblCard1Title, lblStatProjects, lblCard1Sub });
+            // Size & Margin gán trong ApplyClientStyles()
+            panelCard1.Controls.Add(tblCard1);
 
-            panelCard1Top.Dock = DockStyle.Top;
-            panelCard1Top.Height = 5;
+            tblCard1.Dock = DockStyle.Fill;
+            tblCard1.Name = "tblCard1";
+            tblCard1.ColumnCount = 2;
+            tblCard1.RowCount = 4;
+            tblCard1.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 52F));   // icon
+            tblCard1.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));  // text
+            tblCard1.RowStyles.Add(new RowStyle(SizeType.Absolute, 5F));          // accent bar
+            tblCard1.RowStyles.Add(new RowStyle(SizeType.Absolute, 42F));         // icon + title
+            tblCard1.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));        // số lớn
+            tblCard1.RowStyles.Add(new RowStyle(SizeType.Absolute, 26F));         // sub-text
+
+            // Row 0: accent bar (span 2 cột)
             panelCard1Top.Name = "panelCard1Top";
+            panelCard1Top.Dock = DockStyle.Fill;
+            panelCard1Top.Height = 5;
+            tblCard1.Controls.Add(panelCard1Top, 0, 0);
+            tblCard1.SetColumnSpan(panelCard1Top, 2);
 
-            lblCard1Icon.Location = new Point(14, 14);
+            // Row 1 col 0: icon
             lblCard1Icon.Name = "lblCard1Icon";
-            lblCard1Icon.Size = new System.Drawing.Size(44, 40);
+            lblCard1Icon.Dock = DockStyle.Fill;
             lblCard1Icon.Text = "📁";
             lblCard1Icon.TextAlign = ContentAlignment.MiddleCenter;
+            tblCard1.Controls.Add(lblCard1Icon, 0, 1);
 
-            lblCard1Title.Location = new Point(64, 22);
+            // Row 1 col 1: tiêu đề
             lblCard1Title.Name = "lblCard1Title";
-            lblCard1Title.Size = new System.Drawing.Size(162, 16);
+            lblCard1Title.Dock = DockStyle.Fill;
             lblCard1Title.Text = "DỰ ÁN ĐANG CHẠY";
+            lblCard1Title.TextAlign = ContentAlignment.MiddleLeft;
+            tblCard1.Controls.Add(lblCard1Title, 1, 1);
 
-            lblStatProjects.Location = new Point(14, 58);
+            // Row 2: số lớn (span 2 cột)
             lblStatProjects.Name = "lblStatProjects";
-            lblStatProjects.Size = new System.Drawing.Size(200, 60);
+            lblStatProjects.Dock = DockStyle.Fill;
             lblStatProjects.Text = "...";
+            lblStatProjects.TextAlign = ContentAlignment.MiddleCenter;
+            tblCard1.Controls.Add(lblStatProjects, 0, 2);
+            tblCard1.SetColumnSpan(lblStatProjects, 2);
 
-            lblCard1Sub.Location = new Point(14, 122);
+            // Row 3: sub-text (span 2 cột)
             lblCard1Sub.Name = "lblCard1Sub";
-            lblCard1Sub.Size = new System.Drawing.Size(200, 16);
+            lblCard1Sub.Dock = DockStyle.Fill;
             lblCard1Sub.Text = "dự án InProgress";
+            lblCard1Sub.TextAlign = ContentAlignment.MiddleCenter;
+            tblCard1.Controls.Add(lblCard1Sub, 0, 3);
+            tblCard1.SetColumnSpan(lblCard1Sub, 2);
 
-            // ── Card 2 — Công việc của tôi ────────────────────────────────────────
-            panelCard2.BackColor = System.Drawing.Color.White;
+            // ── Card 2 ───────────────────────────────────────────────────────────────
             panelCard2.BorderStyle = BorderStyle.FixedSingle;
             panelCard2.Cursor = Cursors.Hand;
             panelCard2.Name = "panelCard2";
-            panelCard2.Controls.AddRange(new Control[]
-            { panelCard2Top, lblCard2Icon, lblCard2Title, lblStatTasks, lblCard2Sub });
+            panelCard2.Controls.Add(tblCard2);
 
-            panelCard2Top.Dock = DockStyle.Top;
-            panelCard2Top.Height = 5;
+            tblCard2.Dock = DockStyle.Fill;
+            tblCard2.Name = "tblCard2";
+            tblCard2.ColumnCount = 2;
+            tblCard2.RowCount = 4;
+            tblCard2.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 52F));
+            tblCard2.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            tblCard2.RowStyles.Add(new RowStyle(SizeType.Absolute, 5F));
+            tblCard2.RowStyles.Add(new RowStyle(SizeType.Absolute, 42F));
+            tblCard2.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+            tblCard2.RowStyles.Add(new RowStyle(SizeType.Absolute, 26F));
+
             panelCard2Top.Name = "panelCard2Top";
+            panelCard2Top.Dock = DockStyle.Fill;
+            panelCard2Top.Height = 5;
+            tblCard2.Controls.Add(panelCard2Top, 0, 0);
+            tblCard2.SetColumnSpan(panelCard2Top, 2);
 
-            lblCard2Icon.Location = new Point(14, 14);
             lblCard2Icon.Name = "lblCard2Icon";
-            lblCard2Icon.Size = new System.Drawing.Size(44, 40);
+            lblCard2Icon.Dock = DockStyle.Fill;
             lblCard2Icon.Text = "✅";
             lblCard2Icon.TextAlign = ContentAlignment.MiddleCenter;
+            tblCard2.Controls.Add(lblCard2Icon, 0, 1);
 
-            lblCard2Title.Location = new Point(64, 22);
             lblCard2Title.Name = "lblCard2Title";
-            lblCard2Title.Size = new System.Drawing.Size(162, 16);
+            lblCard2Title.Dock = DockStyle.Fill;
             lblCard2Title.Text = "CÔNG VIỆC CỦA TÔI";
+            lblCard2Title.TextAlign = ContentAlignment.MiddleLeft;
+            tblCard2.Controls.Add(lblCard2Title, 1, 1);
 
-            lblStatTasks.Location = new Point(14, 58);
             lblStatTasks.Name = "lblStatTasks";
-            lblStatTasks.Size = new System.Drawing.Size(200, 60);
+            lblStatTasks.Dock = DockStyle.Fill;
             lblStatTasks.Text = "...";
+            lblStatTasks.TextAlign = ContentAlignment.MiddleCenter;
+            tblCard2.Controls.Add(lblStatTasks, 0, 2);
+            tblCard2.SetColumnSpan(lblStatTasks, 2);
 
-            lblCard2Sub.Location = new Point(14, 122);
             lblCard2Sub.Name = "lblCard2Sub";
-            lblCard2Sub.Size = new System.Drawing.Size(200, 16);
+            lblCard2Sub.Dock = DockStyle.Fill;
             lblCard2Sub.Text = "task được giao";
+            lblCard2Sub.TextAlign = ContentAlignment.MiddleCenter;
+            tblCard2.Controls.Add(lblCard2Sub, 0, 3);
+            tblCard2.SetColumnSpan(lblCard2Sub, 2);
 
-            // ── Card 3 — Quá hạn ─────────────────────────────────────────────────
-            panelCard3.BackColor = System.Drawing.Color.White;
+            // ── Card 3 ───────────────────────────────────────────────────────────────
             panelCard3.BorderStyle = BorderStyle.FixedSingle;
             panelCard3.Cursor = Cursors.Hand;
             panelCard3.Name = "panelCard3";
-            panelCard3.Controls.AddRange(new Control[]
-            { panelCard3Top, lblCard3Icon, lblCard3Title, lblStatOverdue, lblCard3Sub });
+            panelCard3.Controls.Add(tblCard3);
 
-            panelCard3Top.Dock = DockStyle.Top;
-            panelCard3Top.Height = 5;
+            tblCard3.Dock = DockStyle.Fill;
+            tblCard3.Name = "tblCard3";
+            tblCard3.ColumnCount = 2;
+            tblCard3.RowCount = 4;
+            tblCard3.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 52F));
+            tblCard3.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            tblCard3.RowStyles.Add(new RowStyle(SizeType.Absolute, 5F));
+            tblCard3.RowStyles.Add(new RowStyle(SizeType.Absolute, 42F));
+            tblCard3.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+            tblCard3.RowStyles.Add(new RowStyle(SizeType.Absolute, 26F));
+
             panelCard3Top.Name = "panelCard3Top";
+            panelCard3Top.Dock = DockStyle.Fill;
+            panelCard3Top.Height = 5;
+            tblCard3.Controls.Add(panelCard3Top, 0, 0);
+            tblCard3.SetColumnSpan(panelCard3Top, 2);
 
-            lblCard3Icon.Location = new Point(14, 14);
             lblCard3Icon.Name = "lblCard3Icon";
-            lblCard3Icon.Size = new System.Drawing.Size(44, 40);
+            lblCard3Icon.Dock = DockStyle.Fill;
             lblCard3Icon.Text = "⚠️";
             lblCard3Icon.TextAlign = ContentAlignment.MiddleCenter;
+            tblCard3.Controls.Add(lblCard3Icon, 0, 1);
 
-            lblCard3Title.Location = new Point(64, 22);
             lblCard3Title.Name = "lblCard3Title";
-            lblCard3Title.Size = new System.Drawing.Size(162, 16);
+            lblCard3Title.Dock = DockStyle.Fill;
             lblCard3Title.Text = "QUÁ HẠN";
+            lblCard3Title.TextAlign = ContentAlignment.MiddleLeft;
+            tblCard3.Controls.Add(lblCard3Title, 1, 1);
 
-            lblStatOverdue.Location = new Point(14, 58);
             lblStatOverdue.Name = "lblStatOverdue";
-            lblStatOverdue.Size = new System.Drawing.Size(200, 60);
+            lblStatOverdue.Dock = DockStyle.Fill;
             lblStatOverdue.Text = "...";
+            lblStatOverdue.TextAlign = ContentAlignment.MiddleCenter;
+            tblCard3.Controls.Add(lblStatOverdue, 0, 2);
+            tblCard3.SetColumnSpan(lblStatOverdue, 2);
 
-            lblCard3Sub.Location = new Point(14, 122);
             lblCard3Sub.Name = "lblCard3Sub";
-            lblCard3Sub.Size = new System.Drawing.Size(200, 16);
+            lblCard3Sub.Dock = DockStyle.Fill;
             lblCard3Sub.Text = "task đã qua deadline";
+            lblCard3Sub.TextAlign = ContentAlignment.MiddleCenter;
+            tblCard3.Controls.Add(lblCard3Sub, 0, 3);
+            tblCard3.SetColumnSpan(lblCard3Sub, 2);
 
-            // ── Card 4 — Hoàn thành tháng này ────────────────────────────────────
-            panelCard4.BackColor = System.Drawing.Color.White;
+            // ── Card 4 ───────────────────────────────────────────────────────────────
             panelCard4.BorderStyle = BorderStyle.FixedSingle;
             panelCard4.Cursor = Cursors.Hand;
             panelCard4.Name = "panelCard4";
-            panelCard4.Controls.AddRange(new Control[]
-            { panelCard4Top, lblCard4Icon, lblCard4Title, lblStatDone, lblCard4Sub });
+            panelCard4.Controls.Add(tblCard4);
 
-            panelCard4Top.Dock = DockStyle.Top;
-            panelCard4Top.Height = 5;
+            tblCard4.Dock = DockStyle.Fill;
+            tblCard4.Name = "tblCard4";
+            tblCard4.ColumnCount = 2;
+            tblCard4.RowCount = 4;
+            tblCard4.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 52F));
+            tblCard4.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            tblCard4.RowStyles.Add(new RowStyle(SizeType.Absolute, 5F));
+            tblCard4.RowStyles.Add(new RowStyle(SizeType.Absolute, 42F));
+            tblCard4.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+            tblCard4.RowStyles.Add(new RowStyle(SizeType.Absolute, 26F));
+
             panelCard4Top.Name = "panelCard4Top";
+            panelCard4Top.Dock = DockStyle.Fill;
+            panelCard4Top.Height = 5;
+            tblCard4.Controls.Add(panelCard4Top, 0, 0);
+            tblCard4.SetColumnSpan(panelCard4Top, 2);
 
-            lblCard4Icon.Location = new Point(14, 14);
             lblCard4Icon.Name = "lblCard4Icon";
-            lblCard4Icon.Size = new System.Drawing.Size(44, 40);
+            lblCard4Icon.Dock = DockStyle.Fill;
             lblCard4Icon.Text = "🎯";
             lblCard4Icon.TextAlign = ContentAlignment.MiddleCenter;
+            tblCard4.Controls.Add(lblCard4Icon, 0, 1);
 
-            lblCard4Title.Location = new Point(64, 22);
             lblCard4Title.Name = "lblCard4Title";
-            lblCard4Title.Size = new System.Drawing.Size(162, 16);
+            lblCard4Title.Dock = DockStyle.Fill;
             lblCard4Title.Text = "XONG THÁNG NÀY";
+            lblCard4Title.TextAlign = ContentAlignment.MiddleLeft;
+            tblCard4.Controls.Add(lblCard4Title, 1, 1);
 
-            lblStatDone.Location = new Point(14, 58);
             lblStatDone.Name = "lblStatDone";
-            lblStatDone.Size = new System.Drawing.Size(200, 60);
+            lblStatDone.Dock = DockStyle.Fill;
             lblStatDone.Text = "...";
+            lblStatDone.TextAlign = ContentAlignment.MiddleCenter;
+            tblCard4.Controls.Add(lblStatDone, 0, 2);
+            tblCard4.SetColumnSpan(lblStatDone, 2);
 
-            lblCard4Sub.Location = new Point(14, 122);
             lblCard4Sub.Name = "lblCard4Sub";
-            lblCard4Sub.Size = new System.Drawing.Size(200, 16);
+            lblCard4Sub.Dock = DockStyle.Fill;
             lblCard4Sub.Text = "task hoàn thành tháng này";
-            // Text thực có tháng cụ thể được gán trong ApplyClientStyles()
+            lblCard4Sub.TextAlign = ContentAlignment.MiddleCenter;
+            tblCard4.Controls.Add(lblCard4Sub, 0, 3);
+            tblCard4.SetColumnSpan(lblCard4Sub, 2);
 
-            // ── Form ───────────────────────────────────────────────────────────────
+            // ════════════════════════════════════════════════════════════════════════
+            // Form
+            // ════════════════════════════════════════════════════════════════════════
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1000, 580);
@@ -275,32 +394,49 @@ namespace TaskFlowManagement.WinForms.Forms
             this.Text = "🏠  Trang chủ";
             this.StartPosition = FormStartPosition.Manual;
 
-            // Thứ tự Add: Fill trước → Top
+            // Thứ tự Add quan trọng: Fill trước → Top sau
             this.Controls.Add(panelBody);
             this.Controls.Add(panelHeader);
 
-            panelHeader.ResumeLayout(false);
-            panelBody.ResumeLayout(false);
-            panelWelcome.ResumeLayout(false);
+            tblCard4.ResumeLayout(false);
+            panelCard4.ResumeLayout(false);
+            tblCard3.ResumeLayout(false);
+            panelCard3.ResumeLayout(false);
+            tblCard2.ResumeLayout(false);
+            panelCard2.ResumeLayout(false);
+            tblCard1.ResumeLayout(false);
+            panelCard1.ResumeLayout(false);
+            flowCards.ResumeLayout(false);
             panelStats.ResumeLayout(false);
+            tblWelcome.ResumeLayout(false);
+            panelWelcome.ResumeLayout(false);
+            panelBody.ResumeLayout(false);
+            panelHeader.ResumeLayout(false);
             this.ResumeLayout(false);
         }
 
-        // ── Field declarations ────────────────────────────────────────────────
+        // ════════════════════════════════════════════════════════════════════════
+        // Field declarations
+        // ════════════════════════════════════════════════════════════════════════
         private Panel panelHeader;
         private Panel panelAccentLine;
         private Label lblHeader;
+
         private Panel panelBody;
+
         private Panel panelWelcome;
+        private TableLayoutPanel tblWelcome;
         private Label lblGreeting;
         private Label lblRole;
         private Label lblLastLogin;
+
         private Panel panelStats;
         private FlowLayoutPanel flowCards;
         private Label lblNote;
 
         private Panel panelCard1;
         private Panel panelCard1Top;
+        private TableLayoutPanel tblCard1;
         private Label lblCard1Icon;
         private Label lblCard1Title;
         private Label lblStatProjects;
@@ -308,6 +444,7 @@ namespace TaskFlowManagement.WinForms.Forms
 
         private Panel panelCard2;
         private Panel panelCard2Top;
+        private TableLayoutPanel tblCard2;
         private Label lblCard2Icon;
         private Label lblCard2Title;
         private Label lblStatTasks;
@@ -315,6 +452,7 @@ namespace TaskFlowManagement.WinForms.Forms
 
         private Panel panelCard3;
         private Panel panelCard3Top;
+        private TableLayoutPanel tblCard3;
         private Label lblCard3Icon;
         private Label lblCard3Title;
         private Label lblStatOverdue;
@@ -322,6 +460,7 @@ namespace TaskFlowManagement.WinForms.Forms
 
         private Panel panelCard4;
         private Panel panelCard4Top;
+        private TableLayoutPanel tblCard4;
         private Label lblCard4Icon;
         private Label lblCard4Title;
         private Label lblStatDone;

@@ -13,6 +13,7 @@ namespace TaskFlowManagement.WinForms.Forms
         private readonly System.Windows.Forms.Timer _searchTimer;
 
         // ── Constructor rỗng: CHỈ dùng cho WinForms Designer ─────────────────
+        [Obsolete("Chỉ dùng cho WinForms Designer")]
         public frmCustomers()
         {
             InitializeComponent();
@@ -27,7 +28,6 @@ namespace TaskFlowManagement.WinForms.Forms
             InitializeComponent();
             ApplyClientStyles();
 
-            // Gắn event timer ở đây, sau khi mọi thứ đã sẵn sàng
             _searchTimer.Tick += async (s, e) =>
             {
                 _searchTimer.Stop();
@@ -35,48 +35,74 @@ namespace TaskFlowManagement.WinForms.Forms
             };
         }
 
-        // ── Tất cả UIHelper / Lambda được tách ra khỏi Designer ──────────────
+        // ── Toàn bộ logic làm đẹp UI tập trung tại đây ───────────────────────
         private void ApplyClientStyles()
         {
+            this.Font = UIHelper.FontBase;
+
             // ── panelTop ──────────────────────────────────────────────────────
             panelTop.BackColor = UIHelper.ColorHeaderBg;
-            panelAccentLine.BackColor = System.Drawing.Color.FromArgb(37, 99, 235);
+            panelAccentLine.BackColor = UIHelper.ColorPrimary;
             lblHeader.Font = UIHelper.FontHeaderLarge;
             lblHeader.ForeColor = UIHelper.ColorHeaderFg;
 
-            // ── panelFilter ───────────────────────────────────────────────────
-            panelFilter.BackColor = UIHelper.ColorBackground;
-            txtSearch.Font = UIHelper.FontSmall;
-            UIHelper.StyleToolButton(btnRefresh, "🔄  Làm mới", UIHelper.ButtonVariant.Secondary, 362, 10, 100, 26);
+            // ── panelTopbar: thanh công cụ hợp nhất (search + buttons) ────────
+            panelTopbar.BackColor = UIHelper.ColorBackground;
 
-            // ── panelToolbar ──────────────────────────────────────────────────
-            panelToolbar.BackColor = UIHelper.ColorSurface;
-            int bx = 12, by = 9, bg = 6, bh = 34;
-            UIHelper.StyleToolButton(btnAdd, "➕  Thêm mới", UIHelper.ButtonVariant.Primary, bx, by, 120, bh); bx += 120 + bg;
-            UIHelper.StyleToolButton(btnEdit, "✏️  Sửa", UIHelper.ButtonVariant.Success, bx, by, 90, bh); bx += 90 + bg;
-            UIHelper.StyleToolButton(btnDelete, "🗑️  Xóa", UIHelper.ButtonVariant.Danger, bx, by, 80, bh); bx += 80 + bg;
-            UIHelper.StyleToolButton(btnDetail, "📋  Xem dự án", UIHelper.ButtonVariant.Slate, bx, by, 120, bh); bx += 120 + bg;
+            UIHelper.StyleSearchBox(txtSearch, "🔍  Tìm theo tên công ty, liên hệ, email...");
+            txtSearch.Size = new Size(340, 32);
 
-            lblCount.Font = UIHelper.FontSmall;
-            lblCount.ForeColor = UIHelper.ColorMuted;
-            lblCount.Location = new System.Drawing.Point(bx, by);
-            lblCount.Size = new System.Drawing.Size(180, bh);
+            // Nút Làm mới — Secondary style với viền rõ ràng, căn cao bằng TextBox
+            UIHelper.StyleButton(btnRefresh, UIHelper.ButtonVariant.Secondary);
+            btnRefresh.Text = "🔄  Làm mới";
+            btnRefresh.Size = new Size(110, 32);
+            btnRefresh.Padding = new Padding(10, 0, 10, 0);
+
+            // Nhóm nút CRUD — AutoSize để đồng nhất padding, không bị cắt text
+            UIHelper.StyleButton(btnAdd, UIHelper.ButtonVariant.Primary);
+            UIHelper.StyleButton(btnEdit, UIHelper.ButtonVariant.Success);
+            UIHelper.StyleButton(btnDelete, UIHelper.ButtonVariant.Danger);
+            UIHelper.StyleButton(btnDetail, UIHelper.ButtonVariant.Slate);
+
+            foreach (var btn in new[] { btnAdd, btnEdit, btnDelete, btnDetail })
+            {
+                btn.AutoSize = true;
+                btn.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+                btn.Padding = new Padding(14, 6, 14, 6);
+            }
+
+            btnAdd.Text = "➕  Thêm mới";
+            btnEdit.Text = "✏️  Sửa";
+            btnDelete.Text = "🗑️  Xóa";
+            btnDetail.Text = "📋  Xem dự án";
 
             // ── DataGridView ──────────────────────────────────────────────────
             UIHelper.StyleDataGridView(dgvCustomers);
             UIHelper.ApplyAlternateRowColors(dgvCustomers);
 
+            // Cấu hình AutoSize cột: Tên công ty, Email, Địa chỉ → Fill; còn lại cố định
+            colCompany.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+            colCompany.FillWeight = 25;
+            colCustEmail.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+            colCustEmail.FillWeight = 20;
+            colAddress.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+            colAddress.FillWeight = 30;
+
+            colContact.AutoSizeMode = DataGridViewAutoSizeColumnMode.None;
+            colContact.Width = 150;
+            colCustPhone.AutoSizeMode = DataGridViewAutoSizeColumnMode.None;
+            colCustPhone.Width = 120;
+            colCreatedAt.AutoSizeMode = DataGridViewAutoSizeColumnMode.None;
+            colCreatedAt.Width = 110;
+
             // ── panelStatus ───────────────────────────────────────────────────
             panelStatus.BackColor = UIHelper.ColorHeaderBg;
             lblStatus.Font = UIHelper.FontSmall;
             lblStatus.ForeColor = UIHelper.ColorSubtitle;
-
-            // ── Font toàn Form ────────────────────────────────────────────────
-            this.Font = UIHelper.FontBase;
         }
 
         // ─────────────────────────────────────────────────────────────────────
-        // Phần còn lại: giữ nguyên hoàn toàn
+        // Event handlers & business logic
         // ─────────────────────────────────────────────────────────────────────
 
         protected override async void OnLoad(EventArgs e)
@@ -113,22 +139,30 @@ namespace TaskFlowManagement.WinForms.Forms
             _displayedCustomers = list;
             _selectedCustomer = null;
             dgvCustomers.Rows.Clear();
+
             foreach (var c in list)
             {
                 dgvCustomers.Rows.Add(
                     c.Id, c.CompanyName,
-                    c.ContactName ?? "", c.Email ?? "",
-                    c.Phone ?? "", c.Address ?? "",
+                    c.ContactName ?? "",
+                    c.Email ?? "",
+                    c.Phone ?? "",
+                    c.Address ?? "",
                     c.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy"));
             }
-            lblCount.Text = $"{list.Count} khách hàng";
+
             UpdateButtons();
         }
 
         private void dgvCustomers_SelectionChanged(object sender, EventArgs e)
         {
             if (dgvCustomers.SelectedRows.Count == 0)
-            { _selectedCustomer = null; UpdateButtons(); return; }
+            {
+                _selectedCustomer = null;
+                UpdateButtons();
+                return;
+            }
+
             int id = (int)dgvCustomers.SelectedRows[0].Cells["colCustId"].Value;
             _selectedCustomer = _displayedCustomers.FirstOrDefault(c => c.Id == id);
             UpdateButtons();
@@ -158,6 +192,7 @@ namespace TaskFlowManagement.WinForms.Forms
         private async void btnDelete_Click(object sender, EventArgs e)
         {
             if (_selectedCustomer == null) return;
+
             var confirm = MessageBox.Show(
                 $"Xóa khách hàng \"{_selectedCustomer.CompanyName}\"?\n\n" +
                 "⚠️  Lưu ý: Chỉ xóa được nếu khách hàng chưa có dự án nào.",
@@ -189,31 +224,51 @@ namespace TaskFlowManagement.WinForms.Forms
         private async void btnDetail_Click(object sender, EventArgs e)
         {
             if (_selectedCustomer == null) return;
+
             var customer = await _customerRepo.GetWithProjectsAsync(_selectedCustomer.Id);
             if (customer == null)
-            { MessageBox.Show("Không tìm thấy khách hàng.", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error); return; }
+            {
+                MessageBox.Show("Không tìm thấy khách hàng.", "Lỗi",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
 
-            var count = customer.Projects?.Count ?? 0;
+            int count = customer.Projects?.Count ?? 0;
             if (count == 0)
-            { MessageBox.Show($"\"{customer.CompanyName}\" chưa có dự án nào.", "Chi tiết khách hàng", MessageBoxButtons.OK, MessageBoxIcon.Information); return; }
+            {
+                MessageBox.Show(
+                    $"\"{customer.CompanyName}\" chưa có dự án nào.",
+                    "Chi tiết khách hàng", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
 
             var lines = customer.Projects!
                 .OrderByDescending(p => p.CreatedAt)
                 .Select(p => $"  📁  {p.Name}  —  {p.Status}  (PM: {p.Owner?.FullName ?? "?"})");
 
             MessageBox.Show(
-                $"Khách hàng: {customer.CompanyName}\nTổng dự án: {count}\n\n" + string.Join("\n", lines),
+                $"Khách hàng: {customer.CompanyName}\nTổng dự án: {count}\n\n" +
+                string.Join("\n", lines),
                 "Danh sách dự án", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         private void dgvCustomers_CellDoubleClick(object sender, DataGridViewCellEventArgs e)
-        { if (e.RowIndex >= 0) btnEdit_Click(sender, e); }
+        {
+            if (e.RowIndex >= 0) btnEdit_Click(sender, e);
+        }
 
         private async void btnRefresh_Click(object sender, EventArgs e)
-        { txtSearch.Clear(); await LoadAllAsync(); }
+        {
+            txtSearch.Clear();
+            await LoadAllAsync();
+        }
 
         protected override void OnFormClosed(FormClosedEventArgs e)
-        { _searchTimer.Stop(); _searchTimer.Dispose(); base.OnFormClosed(e); }
+        {
+            _searchTimer.Stop();
+            _searchTimer.Dispose();
+            base.OnFormClosed(e);
+        }
 
         private void SetStatus(string msg) => lblStatus.Text = msg;
     }

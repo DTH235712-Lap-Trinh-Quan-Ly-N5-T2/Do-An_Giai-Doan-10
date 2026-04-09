@@ -1,5 +1,9 @@
-using TaskFlowManagement.Core.Entities;
+// ============================================================
+//  frmExpenses.cs
+//  TaskFlowManagement.WinForms.Forms
+// ============================================================
 using TaskFlowManagement.Core.DTOs;
+using TaskFlowManagement.Core.Entities;
 using TaskFlowManagement.Core.Interfaces.Services;
 using TaskFlowManagement.WinForms.Common;
 
@@ -7,179 +11,184 @@ namespace TaskFlowManagement.WinForms.Forms
 {
     public partial class frmExpenses : BaseForm
     {
-        private readonly IExpenseService _expenseService;
-        private readonly IProjectService _projectService;
+        // ── Dependencies ──────────────────────────────────────────────────────
+        private readonly IExpenseService _expenseService = null!;
+        private readonly IProjectService _projectService = null!;
 
+        // ── State ─────────────────────────────────────────────────────────────
         private List<Expense> _allExpenses = new();
         private Expense? _selectedExpense = null;
+        private bool _isLoadingProjects = false;
 
-        // ── Constructor rỗng: CHỈ dùng cho WinForms Designer ─────────────────
+        // ── Constructors ──────────────────────────────────────────────────────
+
+        [Obsolete("Chỉ dùng cho WinForms Designer")]
         public frmExpenses()
         {
             InitializeComponent();
         }
 
-        // ── DI Constructor: dùng khi chạy thật ───────────────────────────────
         public frmExpenses(IExpenseService expenseService, IProjectService projectService)
+#pragma warning disable CS0618
+            : this()
+#pragma warning restore CS0618
         {
             _expenseService = expenseService;
             _projectService = projectService;
 
-            InitializeComponent();
             ApplyClientStyles();
             SetupGrid();
             SetupPermissions();
             WireEvents();
         }
 
-        // ── Tất cả UIHelper / layout động được tách ra khỏi Designer ─────────
+        // ── Áp dụng toàn bộ style, font, màu sắc ────────────────────────────
         private void ApplyClientStyles()
         {
-            // ── panelHeader ───────────────────────────────────────────────────
+            this.BackColor = UIHelper.ColorBackground;
+            this.Font = UIHelper.FontBase;
+
+            // Header
             panelHeader.BackColor = UIHelper.ColorHeaderBg;
             lblHeader.Font = UIHelper.FontHeaderLarge;
             lblHeader.ForeColor = UIHelper.ColorHeaderFg;
 
-            // ── panelFilter ───────────────────────────────────────────────────
+            // Filter bar
             panelFilter.BackColor = UIHelper.ColorBackground;
-            panelFilter.Height = 50;
-            panelFilter.Padding = new Padding(10, 0, 10, 0);
             lblProjectFilter.Font = UIHelper.FontLabel;
+            lblProjectFilter.ForeColor = UIHelper.ColorTextPrimary;
             lblTypeFilter.Font = UIHelper.FontLabel;
+            lblTypeFilter.ForeColor = UIHelper.ColorTextPrimary;
 
             UIHelper.StyleFilterCombo(cboProject);
             UIHelper.StyleFilterCombo(cboExpenseType);
             cboExpenseType.Items.Clear();
-            cboExpenseType.Items.AddRange(new object[] { "— Tất cả —", "Nhân công", "Phần mềm", "Hạ tầng", "Khác" });
+            cboExpenseType.Items.AddRange(new object[]
+                { "— Tất cả —", "Nhân công", "Phần mềm", "Hạ tầng", "Khác" });
             cboExpenseType.SelectedIndex = 0;
 
             UIHelper.StyleButton(btnRefresh, UIHelper.ButtonVariant.Secondary);
-            btnRefresh.Text = "🔄 Làm mới";
 
-            // Căn chỉnh vị trí filter controls chống đè chữ
-            cboProject.Left = lblProjectFilter.Right + 10;
-            lblTypeFilter.Left = cboProject.Right + 20;
-            cboExpenseType.Left = lblTypeFilter.Right + 10;
-            btnRefresh.Left = cboExpenseType.Right + 15;
-
-            // ── panelToolbar ──────────────────────────────────────────────────
+            // Toolbar
             panelToolbar.BackColor = UIHelper.ColorSurface;
-            panelToolbar.Height = 54;
-            panelToolbar.Padding = new Padding(10, 0, 10, 0);
-
-            UIHelper.StyleToolButton(btnAdd, "➕ Thêm chi phí", UIHelper.ButtonVariant.Primary, btnAdd.Left, btnAdd.Top, 140, 34);
-            UIHelper.StyleToolButton(btnEdit, "✏️ Sửa", UIHelper.ButtonVariant.Success, btnEdit.Left, btnEdit.Top, 80, 34);
-            UIHelper.StyleToolButton(btnDelete, "🗑️ Xóa", UIHelper.ButtonVariant.Danger, btnDelete.Left, btnDelete.Top, 80, 34);
-            UIHelper.StyleToolButton(btnDetail, "📋 Chi tiết", UIHelper.ButtonVariant.Slate, btnDetail.Left, btnDetail.Top, 100, 34);
+            UIHelper.StyleButton(btnAdd, UIHelper.ButtonVariant.Primary);
+            UIHelper.StyleButton(btnEdit, UIHelper.ButtonVariant.Success);
+            UIHelper.StyleButton(btnDelete, UIHelper.ButtonVariant.Danger);
+            UIHelper.StyleButton(btnDetail, UIHelper.ButtonVariant.Slate);
+            UIHelper.StyleButton(btnExportReport, UIHelper.ButtonVariant.Purple);
 
             lblCount.Font = UIHelper.FontSmall;
             lblCount.ForeColor = UIHelper.ColorMuted;
 
-            // Nút xuất báo cáo (tạo động — không đưa vào Designer)
-            btnExportReport = new Button();
-            UIHelper.StyleToolButton(btnExportReport, "📊 Xuất báo cáo", UIHelper.ButtonVariant.Purple,
-                btnDetail.Right + 12, btnDetail.Top, 145, 34);
-            btnExportReport.Name = "btnExportReport";
-            btnExportReport.Click += async (s, e) => await OpenReportAsync();
-            panelToolbar.Controls.Add(btnExportReport);
+            // Căn lblCount về phía phải toolbar
+            panelToolbar.SizeChanged += (_, _) =>
+                lblCount.Location = new System.Drawing.Point(
+                    panelToolbar.Width - lblCount.Width - 14,
+                    (panelToolbar.Height - lblCount.Height) / 2);
 
-            // ── panelSummary: thay pnlSummaryCard bằng TableLayoutPanel ───────
+            // Khởi tạo layout vùng thống kê
+            BuildSummaryPanel();
+
+            // DataGridView
+            UIHelper.StyleDataGridView(dgvExpenses);
+            UIHelper.ApplyAlternateRowColors(dgvExpenses);
+            dgvExpenses.RowTemplate.Height = 38;
+
+            colAmount.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
+            colDate.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            colType.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+
+            // Status bar
+            panelStatus.BackColor = UIHelper.ColorHeaderBg;
+            lblStatus.Font = UIHelper.FontSmall;
+            lblStatus.ForeColor = UIHelper.ColorSubtitle;
+        }
+
+        // ── Xây dựng vùng thống kê 4 cột ─────────────────────────────────────
+        private void BuildSummaryPanel()
+        {
             panelSummary.BackColor = UIHelper.ColorBackground;
-            panelSummary.Height = 110;
-            panelSummary.Padding = new Padding(10, 10, 10, 0);
 
-            var tlpSummary = new TableLayoutPanel
+            var tlp = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
                 ColumnCount = 4,
                 RowCount = 1,
-                BackColor = Color.Transparent
+                BackColor = System.Drawing.Color.Transparent,
             };
             for (int i = 0; i < 4; i++)
-                tlpSummary.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25F));
+                tlp.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25F));
+            tlp.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
 
-            tlpSummary.Controls.Add(CreateStatCard(lblBudgetTitle, lblBudgetVal), 0, 0);
-            tlpSummary.Controls.Add(CreateStatCard(lblTotalExpenseTitle, lblTotalExpenseVal), 1, 0);
-            tlpSummary.Controls.Add(CreateStatCard(lblRemainingTitle, lblRemainingVal), 2, 0);
-            tlpSummary.Controls.Add(CreateUsageCard(lblUsagePct), 3, 0);
+            tlp.Controls.Add(BuildStatCard(lblBudgetTitle, lblBudgetVal), 0, 0);
+            tlp.Controls.Add(BuildStatCard(lblTotalExpenseTitle, lblTotalExpenseVal), 1, 0);
+            tlp.Controls.Add(BuildStatCard(lblRemainingTitle, lblRemainingVal), 2, 0);
+            tlp.Controls.Add(BuildUsageCard(lblUsagePct), 3, 0);
 
             panelSummary.Controls.Clear();
-            panelSummary.Controls.Add(tlpSummary);
-
-            // ── DataGridView ──────────────────────────────────────────────────
-            UIHelper.StyleDataGridView(dgvExpenses);
-            UIHelper.ApplyAlternateRowColors(dgvExpenses);
-            dgvExpenses.Dock = DockStyle.Fill;
-            colNote.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
-            colAmount.DefaultCellStyle.Format = "N0";
-
-            // ── Status bar ────────────────────────────────────────────────────
-            (panelStatus, lblStatus) = UIHelper.CreateStatusBar();
-            this.Controls.Add(panelStatus);   // thêm vào form sau khi tạo
+            panelSummary.Controls.Add(tlp);
         }
 
-        private Panel CreateStatCard(Label title, Label val)
+        private Panel BuildStatCard(Label title, Label val)
         {
             var pnl = new Panel
             {
                 Dock = DockStyle.Fill,
                 BackColor = UIHelper.ColorSurface,
                 Margin = new Padding(4),
-                BorderStyle = BorderStyle.None
+                BorderStyle = BorderStyle.None,
             };
 
             title.Dock = DockStyle.Top;
-            title.Height = 25;
-            title.TextAlign = ContentAlignment.BottomLeft;
+            title.Height = 26;
+            title.TextAlign = System.Drawing.ContentAlignment.BottomLeft;
             title.Font = UIHelper.FontLabel;
             title.ForeColor = UIHelper.ColorMuted;
             title.Padding = new Padding(10, 0, 0, 0);
 
             val.Dock = DockStyle.Fill;
-            val.TextAlign = ContentAlignment.MiddleLeft;
+            val.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             val.Font = UIHelper.FontHeaderLarge;
-            val.Padding = new Padding(10, 0, 0, 10);
+            val.ForeColor = UIHelper.ColorTextPrimary;
+            val.Padding = new Padding(10, 0, 0, 0);
 
             pnl.Controls.Add(val);
             pnl.Controls.Add(title);
             return pnl;
         }
 
-        private Panel CreateUsageCard(Label pct)
+        private Panel BuildUsageCard(Label pct)
         {
             var pnl = new Panel
             {
                 Dock = DockStyle.Fill,
                 BackColor = UIHelper.ColorSurface,
                 Margin = new Padding(4),
-                BorderStyle = BorderStyle.None
+                BorderStyle = BorderStyle.None,
             };
 
             var title = new Label
             {
                 Text = "TỶ LỆ SỬ DỤNG",
                 Dock = DockStyle.Top,
-                Height = 25,
-                TextAlign = ContentAlignment.BottomLeft,
+                Height = 26,
+                TextAlign = System.Drawing.ContentAlignment.BottomLeft,
                 Font = UIHelper.FontLabel,
                 ForeColor = UIHelper.ColorMuted,
-                Padding = new Padding(10, 0, 0, 0)
+                Padding = new Padding(10, 0, 0, 0),
             };
 
             pct.Dock = DockStyle.Fill;
-            pct.TextAlign = ContentAlignment.MiddleRight;
-            pct.Font = new Font("Segoe UI", 18F, FontStyle.Bold);
-            pct.Padding = new Padding(0, 0, 15, 0);
+            pct.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
+            pct.Font = new System.Drawing.Font("Segoe UI", 20F, System.Drawing.FontStyle.Bold);
+            pct.Padding = new Padding(0, 0, 16, 0);
 
             pnl.Controls.Add(pct);
             pnl.Controls.Add(title);
             return pnl;
         }
 
-        // ─────────────────────────────────────────────────────────────────────
-        // Phần còn lại: giữ nguyên hoàn toàn
-        // ─────────────────────────────────────────────────────────────────────
-
+        // ── Cấu hình DataPropertyName cho grid ───────────────────────────────
         private void SetupGrid()
         {
             dgvExpenses.AutoGenerateColumns = false;
@@ -192,6 +201,7 @@ namespace TaskFlowManagement.WinForms.Forms
             colCreatedBy.DataPropertyName = "CreatorName";
         }
 
+        // ── Phân quyền hiển thị nút ──────────────────────────────────────────
         private void SetupPermissions()
         {
             bool canManage = AppSession.IsManager || AppSession.IsAdmin;
@@ -201,40 +211,35 @@ namespace TaskFlowManagement.WinForms.Forms
             btnExportReport.Visible = canManage;
         }
 
-        private bool _isLoadingProjects = false;
-
+        // ── Đăng ký sự kiện ──────────────────────────────────────────────────
         private void WireEvents()
         {
-            this.Load += async (s, e) =>
+            this.Load += async (_, _) =>
             {
                 await LoadProjectsAsync();
                 await LoadExpensesAsync();
             };
 
-            cboProject.SelectedIndexChanged += async (s, e) => { if (!_isLoadingProjects) await LoadExpensesAsync(); };
-            cboExpenseType.SelectedIndexChanged += (s, e) => ApplyFilter();
-            btnRefresh.Click += async (s, e) => await LoadExpensesAsync();
+            cboProject.SelectedIndexChanged += async (_, _) => { if (!_isLoadingProjects) await LoadExpensesAsync(); };
+            cboExpenseType.SelectedIndexChanged += (_, _) => ApplyFilter();
+            btnRefresh.Click += async (_, _) => await LoadExpensesAsync();
 
-            dgvExpenses.SelectionChanged += (s, e) =>
+            dgvExpenses.SelectionChanged += (_, _) =>
             {
-                if (dgvExpenses.CurrentRow != null && dgvExpenses.CurrentRow.Selected)
-                {
-                    if (dgvExpenses.CurrentRow.Cells["colId"].Value is int id)
-                        _selectedExpense = _allExpenses.FirstOrDefault(x => x.Id == id);
-                }
-                else
-                {
-                    _selectedExpense = null;
-                }
+                _selectedExpense = null;
+                if (dgvExpenses.CurrentRow?.Selected == true
+                    && dgvExpenses.CurrentRow.Cells["colId"].Value is int id)
+                    _selectedExpense = _allExpenses.FirstOrDefault(x => x.Id == id);
                 UpdateButtons();
             };
 
-            btnAdd.Click += async (s, e) => await OpenEditForm(null);
-            btnEdit.Click += async (s, e) => await OpenEditForm(_selectedExpense);
-            btnDelete.Click += async (s, e) => await DeleteExpenseAsync();
-            btnDetail.Click += (s, e) => ShowDetail();
+            btnAdd.Click += async (_, _) => await OpenEditFormAsync(null);
+            btnEdit.Click += async (_, _) => await OpenEditFormAsync(_selectedExpense);
+            btnDelete.Click += async (_, _) => await DeleteExpenseAsync();
+            btnDetail.Click += (_, _) => ShowDetail();
+            btnExportReport.Click += async (_, _) => await OpenReportAsync();
 
-            dgvExpenses.CellFormatting += dgvExpenses_CellFormatting;
+            dgvExpenses.CellFormatting += DgvExpenses_CellFormatting;
         }
 
         private void UpdateButtons()
@@ -245,6 +250,7 @@ namespace TaskFlowManagement.WinForms.Forms
             btnDetail.Enabled = has;
         }
 
+        // ── Tải danh sách dự án ───────────────────────────────────────────────
         private async Task LoadProjectsAsync()
         {
             _isLoadingProjects = true;
@@ -264,7 +270,8 @@ namespace TaskFlowManagement.WinForms.Forms
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Lỗi tải dự án: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"Lỗi tải dự án: {ex.Message}", "Lỗi",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             finally
             {
@@ -272,6 +279,7 @@ namespace TaskFlowManagement.WinForms.Forms
             }
         }
 
+        // ── Tải dữ liệu chi phí ──────────────────────────────────────────────
         private async Task LoadExpensesAsync()
         {
             SetStatus("⏳ Đang tải dữ liệu...");
@@ -289,12 +297,11 @@ namespace TaskFlowManagement.WinForms.Forms
                 {
                     var projects = await _projectService.GetProjectsForUserAsync(
                         AppSession.UserId, AppSession.IsManager || AppSession.IsAdmin);
+
                     _allExpenses = new List<Expense>();
                     foreach (var p in projects)
-                    {
-                        var pExpenses = await _expenseService.GetByProjectAsync(p.Id);
-                        _allExpenses.AddRange(pExpenses);
-                    }
+                        _allExpenses.AddRange(await _expenseService.GetByProjectAsync(p.Id));
+
                     _allExpenses = _allExpenses.OrderByDescending(x => x.ExpenseDate).ToList();
                     UpdateSummaryCard(null);
                 }
@@ -309,6 +316,7 @@ namespace TaskFlowManagement.WinForms.Forms
             }
         }
 
+        // ── Cập nhật vùng thống kê ────────────────────────────────────────────
         private void UpdateSummaryCard(ProjectBudgetSummaryDto? summary)
         {
             if (summary == null)
@@ -317,6 +325,9 @@ namespace TaskFlowManagement.WinForms.Forms
                 lblTotalExpenseVal.Text = "—";
                 lblRemainingVal.Text = "—";
                 lblUsagePct.Text = "0%";
+                lblBudgetVal.ForeColor = UIHelper.ColorTextPrimary;
+                lblTotalExpenseVal.ForeColor = UIHelper.ColorTextPrimary;
+                lblRemainingVal.ForeColor = UIHelper.ColorTextPrimary;
                 lblUsagePct.ForeColor = UIHelper.ColorMuted;
                 return;
             }
@@ -325,6 +336,8 @@ namespace TaskFlowManagement.WinForms.Forms
             lblTotalExpenseVal.Text = summary.TotalExpense.ToString("N0") + " ₫";
             lblRemainingVal.Text = summary.Remaining.ToString("N0") + " ₫";
             lblUsagePct.Text = summary.UsagePercent.ToString("N0") + "%";
+
+            lblBudgetVal.ForeColor = UIHelper.ColorTextPrimary;
 
             if (summary.IsOverBudget)
             {
@@ -340,12 +353,13 @@ namespace TaskFlowManagement.WinForms.Forms
             }
             else
             {
-                lblTotalExpenseVal.ForeColor = UIHelper.ColorHeaderBg;
+                lblTotalExpenseVal.ForeColor = UIHelper.ColorTextPrimary;
                 lblRemainingVal.ForeColor = UIHelper.ColorSuccess;
                 lblUsagePct.ForeColor = UIHelper.ColorMuted;
             }
         }
 
+        // ── Lọc và bind dữ liệu ──────────────────────────────────────────────
         private void ApplyFilter()
         {
             string typeFilter = cboExpenseType.SelectedItem?.ToString() ?? "— Tất cả —";
@@ -357,7 +371,7 @@ namespace TaskFlowManagement.WinForms.Forms
 
         private void BindGrid(List<Expense> list)
         {
-            var gridData = list.Select(e => new
+            var source = list.Select(e => new
             {
                 e.Id,
                 ProjectName = e.Project?.Name ?? "—",
@@ -365,27 +379,32 @@ namespace TaskFlowManagement.WinForms.Forms
                 e.Amount,
                 ExpenseDateDisplay = e.ExpenseDate.ToString("dd/MM/yyyy"),
                 Note = e.Note ?? "—",
-                CreatorName = e.CreatedBy?.FullName ?? "Hệ thống"
+                CreatorName = e.CreatedBy?.FullName ?? "Hệ thống",
             }).ToList();
 
-            dgvExpenses.DataSource = gridData;
+            dgvExpenses.DataSource = source;
             lblCount.Text = $"Tổng số: {list.Count} khoản chi.";
         }
 
-        private async Task OpenEditForm(Expense? expense)
+        // ── Mở form chỉnh sửa ────────────────────────────────────────────────
+        private async Task OpenEditFormAsync(Expense? expense)
         {
             using var dlg = new frmExpenseEdit(_expenseService, _projectService, expense);
             if (dlg.ShowDialog(this) == DialogResult.OK)
                 await LoadExpensesAsync();
         }
 
+        // ── Xóa chi phí ──────────────────────────────────────────────────────
         private async Task DeleteExpenseAsync()
         {
             if (_selectedExpense == null) return;
 
-            if (MessageBox.Show(
-                $"Xác nhận xóa khoản chi {_selectedExpense.Amount:N0} ₫ cho dự án {_selectedExpense.Project?.Name}?",
-                "Xác nhận", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
+            var confirm = MessageBox.Show(
+                $"Xác nhận xóa khoản chi {_selectedExpense.Amount:N0} ₫ " +
+                $"cho dự án {_selectedExpense.Project?.Name}?",
+                "Xác nhận", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+
+            if (confirm != DialogResult.Yes) return;
 
             btnDelete.Enabled = false;
             try
@@ -400,36 +419,35 @@ namespace TaskFlowManagement.WinForms.Forms
             }
         }
 
+        // ── Hiển thị chi tiết ────────────────────────────────────────────────
         private void ShowDetail()
         {
             if (_selectedExpense == null) return;
 
-            string info = $"Dự án: {_selectedExpense.Project?.Name}\n" +
-                          $"Loại: {_selectedExpense.ExpenseType}\n" +
-                          $"Số tiền: {_selectedExpense.Amount:N0} ₫\n" +
-                          $"Ngày: {_selectedExpense.ExpenseDate:dd/MM/yyyy}\n" +
-                          $"Người tạo: {_selectedExpense.CreatedBy?.FullName}\n" +
-                          $"Ghi chú: {_selectedExpense.Note ?? "—"}";
-
-            MessageBox.Show(info, "Chi tiết chi phí", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            MessageBox.Show(
+                $"Dự án   : {_selectedExpense.Project?.Name}\n" +
+                $"Loại    : {_selectedExpense.ExpenseType}\n" +
+                $"Số tiền : {_selectedExpense.Amount:N0} ₫\n" +
+                $"Ngày    : {_selectedExpense.ExpenseDate:dd/MM/yyyy}\n" +
+                $"Người tạo: {_selectedExpense.CreatedBy?.FullName}\n" +
+                $"Ghi chú : {_selectedExpense.Note ?? "—"}",
+                "Chi tiết chi phí", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
-        private void dgvExpenses_CellFormatting(object? sender, DataGridViewCellFormattingEventArgs e)
+        // ── Format cột số tiền ────────────────────────────────────────────────
+        private void DgvExpenses_CellFormatting(object? sender, DataGridViewCellFormattingEventArgs e)
         {
-            if (e.Value == null || e.RowIndex < 0) return;
+            if (e.RowIndex < 0 || e.Value == null) return;
+            if (dgvExpenses.Columns[e.ColumnIndex].Name != "colAmount") return;
 
-            if (dgvExpenses.Columns[e.ColumnIndex].Name == "colAmount")
+            if (e.Value is decimal amount)
             {
-                if (e.Value is decimal amount)
-                {
-                    e.Value = amount.ToString("N0") + " ₫";
-                    e.FormattingApplied = true;
-                }
+                e.Value = amount.ToString("N0") + " ₫";
+                e.FormattingApplied = true;
             }
         }
 
-        private void SetStatus(string msg) => lblStatus.Text = msg;
-
+        // ── Mở báo cáo ───────────────────────────────────────────────────────
         private async Task OpenReportAsync()
         {
             try
@@ -455,6 +473,13 @@ namespace TaskFlowManagement.WinForms.Forms
             {
                 this.Cursor = Cursors.Default;
             }
+        }
+
+        // ── Thanh trạng thái ─────────────────────────────────────────────────
+        private void SetStatus(string msg)
+        {
+            if (lblStatus != null && !lblStatus.IsDisposed)
+                lblStatus.Text = msg;
         }
     }
 }

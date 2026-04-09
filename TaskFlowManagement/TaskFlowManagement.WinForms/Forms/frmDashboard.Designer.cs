@@ -7,216 +7,252 @@ namespace TaskFlowManagement.WinForms.Forms
         protected override void Dispose(bool disposing)
         {
             if (disposing && (components != null))
-            {
                 components.Dispose();
-            }
             base.Dispose(disposing);
         }
 
         private void InitializeComponent()
         {
-            this.pnlHeader = new System.Windows.Forms.Panel();
-            this.pnlToolbar = new System.Windows.Forms.Panel();
-            this.cboProject = new System.Windows.Forms.ComboBox();
-            this.lblProjectFilter = new System.Windows.Forms.Label();
-            this.pnlContent = new System.Windows.Forms.Panel();
-            this.tabControlDashboard = new System.Windows.Forms.TabControl();
-            this.tabOverview = new System.Windows.Forms.TabPage();
-            this.pnlCharts = new System.Windows.Forms.TableLayoutPanel();
-            this.pnlPieChart = new System.Windows.Forms.Panel();
-            this.pnlCards = new System.Windows.Forms.FlowLayoutPanel();
-            this.tabProgress = new System.Windows.Forms.TabPage();
-            this.pnlProgressChart = new System.Windows.Forms.Panel();
-            this.tabBudget = new System.Windows.Forms.TabPage();
-            this.pnlBudgetChart = new System.Windows.Forms.Panel();
-            this.pnlToolbar.SuspendLayout();
-            this.pnlContent.SuspendLayout();
-            this.tabControlDashboard.SuspendLayout();
-            this.tabOverview.SuspendLayout();
-            this.pnlCharts.SuspendLayout();
-            this.tabProgress.SuspendLayout();
-            this.tabBudget.SuspendLayout();
+            // ── Khai báo tất cả controls ──────────────────────────────────────
+            pnlHeader = new Panel();
+            pnlToolbar = new Panel();
+            lblProjectFilter = new Label();
+            cboProject = new ComboBox();
+            pnlContent = new Panel();
+            tabControlDashboard = new TabControl();
+
+            // Tab 1 – Tổng Quan
+            tabOverview = new TabPage();
+            pnlOverviewBody = new TableLayoutPanel();
+            pnlCardsLayout = new TableLayoutPanel();
+            pnlPieChartArea = new Panel();
+            pnlPieChartSplit = new TableLayoutPanel();
+            pnlPieChart = new Panel();
+            pnlLegend = new Panel();
+
+            // Tab 2 – Tiến độ
+            tabProgress = new TabPage();
+            pnlProgressChart = new Panel();
+
+            // Tab 3 – Ngân sách
+            tabBudget = new TabPage();
+            pnlBudgetWrapper = new TableLayoutPanel();
+            pnlBudgetChart = new Panel();
+            pnlBudgetLegend = new Panel();
+
+            pnlToolbar.SuspendLayout();
+            pnlContent.SuspendLayout();
+            tabControlDashboard.SuspendLayout();
+            tabOverview.SuspendLayout();
+            pnlOverviewBody.SuspendLayout();
+            pnlCardsLayout.SuspendLayout();
+            pnlPieChartArea.SuspendLayout();
+            pnlPieChartSplit.SuspendLayout();
+            tabProgress.SuspendLayout();
+            tabBudget.SuspendLayout();
+            pnlBudgetWrapper.SuspendLayout();
             this.SuspendLayout();
-            // 
-            // pnlHeader
-            // 
-            this.pnlHeader.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlHeader.Location = new System.Drawing.Point(0, 0);
-            this.pnlHeader.Name = "pnlHeader";
-            this.pnlHeader.Size = new System.Drawing.Size(1200, 68);
-            this.pnlHeader.TabIndex = 0;
-            // 
-            // pnlToolbar
-            // 
-            this.pnlToolbar.Controls.Add(this.lblProjectFilter);
-            this.pnlToolbar.Controls.Add(this.cboProject);
-            this.pnlToolbar.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlToolbar.Location = new System.Drawing.Point(0, 68);
-            this.pnlToolbar.Name = "pnlToolbar";
-            this.pnlToolbar.Size = new System.Drawing.Size(1200, 52);
-            this.pnlToolbar.TabIndex = 1;
-            // 
-            // lblProjectFilter
-            // 
-            this.lblProjectFilter.AutoSize = true;
-            this.lblProjectFilter.Location = new System.Drawing.Point(20, 18);
-            this.lblProjectFilter.Name = "lblProjectFilter";
-            this.lblProjectFilter.Size = new System.Drawing.Size(60, 15);
-            this.lblProjectFilter.TabIndex = 1;
-            this.lblProjectFilter.Text = "Lọc dự án:";
-            // 
-            // cboProject
-            // 
-            this.cboProject.FormattingEnabled = true;
-            this.cboProject.Location = new System.Drawing.Point(90, 14);
-            this.cboProject.Name = "cboProject";
-            this.cboProject.Size = new System.Drawing.Size(300, 23);
-            this.cboProject.TabIndex = 0;
-            // 
-            // pnlContent
-            // 
-            this.pnlContent.Controls.Add(this.tabControlDashboard);
-            this.pnlContent.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.pnlContent.Location = new System.Drawing.Point(0, 120);
-            this.pnlContent.Name = "pnlContent";
-            this.pnlContent.Padding = new System.Windows.Forms.Padding(20);
-            this.pnlContent.Size = new System.Drawing.Size(1200, 680);
-            this.pnlContent.TabIndex = 2;
-            // 
-            // tabControlDashboard
-            // 
-            this.tabControlDashboard.Controls.Add(this.tabOverview);
-            this.tabControlDashboard.Controls.Add(this.tabProgress);
-            this.tabControlDashboard.Controls.Add(this.tabBudget);
-            this.tabControlDashboard.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tabControlDashboard.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.tabControlDashboard.Location = new System.Drawing.Point(20, 20);
-            this.tabControlDashboard.Name = "tabControlDashboard";
-            this.tabControlDashboard.SelectedIndex = 0;
-            this.tabControlDashboard.Size = new System.Drawing.Size(1160, 640);
-            this.tabControlDashboard.TabIndex = 0;
-            // 
-            // tabOverview
-            // 
-            this.tabOverview.Controls.Add(this.pnlCharts);
-            this.tabOverview.Controls.Add(this.pnlCards);
-            this.tabOverview.Location = new System.Drawing.Point(4, 26);
-            this.tabOverview.Name = "tabOverview";
-            this.tabOverview.Padding = new System.Windows.Forms.Padding(20);
-            this.tabOverview.Size = new System.Drawing.Size(1152, 610);
-            this.tabOverview.TabIndex = 0;
-            this.tabOverview.Text = "Tổng Quan";
-            this.tabOverview.UseVisualStyleBackColor = true;
-            // 
-            // pnlCharts
-            // 
-            this.pnlCharts.ColumnCount = 1;
-            this.pnlCharts.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.pnlCharts.Controls.Add(this.pnlPieChart, 0, 0);
-            this.pnlCharts.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.pnlCharts.Location = new System.Drawing.Point(20, 140);
-            this.pnlCharts.Name = "pnlCharts";
-            this.pnlCharts.RowCount = 1;
-            this.pnlCharts.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.pnlCharts.Size = new System.Drawing.Size(1112, 450);
-            this.pnlCharts.TabIndex = 1;
-            // 
-            // pnlPieChart
-            // 
-            this.pnlPieChart.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.pnlPieChart.Location = new System.Drawing.Point(0, 20);
-            this.pnlPieChart.Margin = new System.Windows.Forms.Padding(0, 20, 0, 0);
-            this.pnlPieChart.Name = "pnlPieChart";
-            this.pnlPieChart.Size = new System.Drawing.Size(1112, 430);
-            this.pnlPieChart.TabIndex = 0;
-            this.pnlPieChart.Paint += new System.Windows.Forms.PaintEventHandler(this.PnlPieChart_Paint);
-            // 
-            // pnlCards
-            // 
-            this.pnlCards.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlCards.Location = new System.Drawing.Point(20, 20);
-            this.pnlCards.Name = "pnlCards";
-            this.pnlCards.Size = new System.Drawing.Size(1112, 120);
-            this.pnlCards.TabIndex = 0;
-            this.pnlCards.WrapContents = false;
-            // 
-            // tabProgress
-            // 
-            this.tabProgress.Controls.Add(this.pnlProgressChart);
-            this.tabProgress.Location = new System.Drawing.Point(4, 26);
-            this.tabProgress.Name = "tabProgress";
-            this.tabProgress.Padding = new System.Windows.Forms.Padding(20);
-            this.tabProgress.Size = new System.Drawing.Size(1152, 610);
-            this.tabProgress.TabIndex = 1;
-            this.tabProgress.Text = "Báo cáo tiến độ";
-            this.tabProgress.UseVisualStyleBackColor = true;
-            // 
-            // pnlProgressChart
-            // 
-            this.pnlProgressChart.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.pnlProgressChart.Location = new System.Drawing.Point(20, 20);
-            this.pnlProgressChart.Name = "pnlProgressChart";
-            this.pnlProgressChart.Size = new System.Drawing.Size(1112, 570);
-            this.pnlProgressChart.TabIndex = 0;
-            this.pnlProgressChart.Paint += new System.Windows.Forms.PaintEventHandler(this.PnlProgressChart_Paint);
-            // 
-            // tabBudget
-            // 
-            this.tabBudget.Controls.Add(this.pnlBudgetChart);
-            this.tabBudget.Location = new System.Drawing.Point(4, 26);
-            this.tabBudget.Name = "tabBudget";
-            this.tabBudget.Padding = new System.Windows.Forms.Padding(20);
-            this.tabBudget.Size = new System.Drawing.Size(1152, 610);
-            this.tabBudget.TabIndex = 2;
-            this.tabBudget.Text = "Ngân sách & Chi phí";
-            this.tabBudget.UseVisualStyleBackColor = true;
-            // 
-            // pnlBudgetChart
-            // 
-            this.pnlBudgetChart.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.pnlBudgetChart.Location = new System.Drawing.Point(20, 20);
-            this.pnlBudgetChart.Name = "pnlBudgetChart";
-            this.pnlBudgetChart.Size = new System.Drawing.Size(1112, 570);
-            this.pnlBudgetChart.TabIndex = 0;
-            this.pnlBudgetChart.Paint += new System.Windows.Forms.PaintEventHandler(this.PnlBudgetChart_Paint);
-            // 
-            // frmDashboard
-            // 
+
+            // ── pnlHeader ─────────────────────────────────────────────────────
+            pnlHeader.Dock = DockStyle.Top;
+            pnlHeader.Height = 68;
+            pnlHeader.Name = "pnlHeader";
+
+            // ── pnlToolbar ────────────────────────────────────────────────────
+            pnlToolbar.Controls.Add(cboProject);
+            pnlToolbar.Controls.Add(lblProjectFilter);
+            pnlToolbar.Dock = DockStyle.Top;
+            pnlToolbar.Height = 52;
+            pnlToolbar.Name = "pnlToolbar";
+            pnlToolbar.Padding = new Padding(16, 0, 16, 0);
+
+            lblProjectFilter.AutoSize = true;
+            lblProjectFilter.Location = new Point(20, 16);
+            lblProjectFilter.Name = "lblProjectFilter";
+            lblProjectFilter.Text = "Lọc dự án:";
+
+            cboProject.FormattingEnabled = true;
+            cboProject.Location = new Point(100, 12);
+            cboProject.Name = "cboProject";
+            cboProject.Size = new Size(320, 23);
+            cboProject.TabIndex = 0;
+            cboProject.DropDownStyle = ComboBoxStyle.DropDownList;
+
+            // ── pnlContent ────────────────────────────────────────────────────
+            pnlContent.Controls.Add(tabControlDashboard);
+            pnlContent.Dock = DockStyle.Fill;
+            pnlContent.Name = "pnlContent";
+            pnlContent.Padding = new Padding(16, 8, 16, 12);
+
+            // ── tabControlDashboard ───────────────────────────────────────────
+            tabControlDashboard.Controls.Add(tabOverview);
+            tabControlDashboard.Controls.Add(tabProgress);
+            tabControlDashboard.Controls.Add(tabBudget);
+            tabControlDashboard.Dock = DockStyle.Fill;
+            tabControlDashboard.Name = "tabControlDashboard";
+            tabControlDashboard.SelectedIndex = 0;
+            tabControlDashboard.Padding = new Point(16, 8);
+
+            // ── tabOverview ───────────────────────────────────────────────────
+            tabOverview.Controls.Add(pnlOverviewBody);
+            tabOverview.Name = "tabOverview";
+            tabOverview.Padding = new Padding(14);
+            tabOverview.Text = "Tổng Quan";
+            tabOverview.UseVisualStyleBackColor = true;
+
+            // pnlOverviewBody: hàng 0 = stat cards (140px cố định), hàng 1 = chart (fill)
+            pnlOverviewBody.ColumnCount = 1;
+            pnlOverviewBody.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            pnlOverviewBody.RowCount = 2;
+            pnlOverviewBody.RowStyles.Add(new RowStyle(SizeType.Absolute, 140F));
+            pnlOverviewBody.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+            pnlOverviewBody.Controls.Add(pnlCardsLayout, 0, 0);
+            pnlOverviewBody.Controls.Add(pnlPieChartArea, 0, 1);
+            pnlOverviewBody.Dock = DockStyle.Fill;
+            pnlOverviewBody.Name = "pnlOverviewBody";
+            pnlOverviewBody.Padding = new Padding(0);
+            pnlOverviewBody.Margin = new Padding(0);
+
+            // pnlCardsLayout: 4 cột đều nhau
+            pnlCardsLayout.ColumnCount = 4;
+            pnlCardsLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25F));
+            pnlCardsLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25F));
+            pnlCardsLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25F));
+            pnlCardsLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25F));
+            pnlCardsLayout.RowCount = 1;
+            pnlCardsLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+            pnlCardsLayout.Dock = DockStyle.Fill;
+            pnlCardsLayout.Margin = new Padding(0, 0, 0, 12);
+            pnlCardsLayout.Name = "pnlCardsLayout";
+
+            // pnlPieChartArea: card bao ngoài khu vực donut + legend
+            pnlPieChartArea.Controls.Add(pnlPieChartSplit);
+            pnlPieChartArea.Dock = DockStyle.Fill;
+            pnlPieChartArea.Margin = new Padding(0);
+            pnlPieChartArea.Name = "pnlPieChartArea";
+            pnlPieChartArea.Padding = new Padding(20);
+            pnlPieChartArea.BorderStyle = BorderStyle.None;
+
+            // pnlPieChartSplit: 2 cột 50/50 — donut trái, legend phải
+            pnlPieChartSplit.ColumnCount = 2;
+            pnlPieChartSplit.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
+            pnlPieChartSplit.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
+            pnlPieChartSplit.RowCount = 1;
+            pnlPieChartSplit.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+            pnlPieChartSplit.Controls.Add(pnlPieChart, 0, 0);
+            pnlPieChartSplit.Controls.Add(pnlLegend, 1, 0);
+            pnlPieChartSplit.Dock = DockStyle.Fill;
+            pnlPieChartSplit.Margin = new Padding(0);
+            pnlPieChartSplit.Name = "pnlPieChartSplit";
+            pnlPieChartSplit.Padding = new Padding(0);
+
+            // pnlPieChart: cột trái — vẽ donut qua sự kiện Paint
+            pnlPieChart.Dock = DockStyle.Fill;
+            pnlPieChart.Margin = new Padding(0);
+            pnlPieChart.Name = "pnlPieChart";
+            pnlPieChart.Paint += new PaintEventHandler(PnlPieChart_Paint);
+
+            // pnlLegend: cột phải — vẽ chú giải qua sự kiện Paint
+            pnlLegend.Dock = DockStyle.Fill;
+            pnlLegend.Margin = new Padding(0);
+            pnlLegend.Name = "pnlLegend";
+            pnlLegend.Paint += new PaintEventHandler(PnlLegend_Paint);
+
+            // ── tabProgress ───────────────────────────────────────────────────
+            tabProgress.Controls.Add(pnlProgressChart);
+            tabProgress.Name = "tabProgress";
+            tabProgress.Padding = new Padding(14);
+            tabProgress.Text = "Báo cáo tiến độ";
+            tabProgress.UseVisualStyleBackColor = true;
+
+            pnlProgressChart.Dock = DockStyle.Fill;
+            pnlProgressChart.Margin = new Padding(0);
+            pnlProgressChart.Name = "pnlProgressChart";
+            pnlProgressChart.AutoScroll = true;
+            pnlProgressChart.BorderStyle = BorderStyle.None;
+            pnlProgressChart.Paint += new PaintEventHandler(PnlProgressChart_Paint);
+
+            // ── tabBudget ─────────────────────────────────────────────────────
+            // Cấu trúc: tabBudget → pnlBudgetWrapper (TableLayoutPanel 2 hàng)
+            //   Hàng 0 (Fill)    : pnlBudgetChart  — biểu đồ cuộn dọc
+            //   Hàng 1 (40px)    : pnlBudgetLegend — chú giải cố định phía dưới
+            tabBudget.Controls.Add(pnlBudgetWrapper);
+            tabBudget.Name = "tabBudget";
+            tabBudget.Padding = new Padding(14);
+            tabBudget.Text = "Ngân sách & Chi phí";
+            tabBudget.UseVisualStyleBackColor = true;
+
+            pnlBudgetWrapper.ColumnCount = 1;
+            pnlBudgetWrapper.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            pnlBudgetWrapper.RowCount = 2;
+            pnlBudgetWrapper.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+            pnlBudgetWrapper.RowStyles.Add(new RowStyle(SizeType.Absolute, 40F));
+            pnlBudgetWrapper.Controls.Add(pnlBudgetChart, 0, 0);
+            pnlBudgetWrapper.Controls.Add(pnlBudgetLegend, 0, 1);
+            pnlBudgetWrapper.Dock = DockStyle.Fill;
+            pnlBudgetWrapper.Margin = new Padding(0);
+            pnlBudgetWrapper.Padding = new Padding(0);
+            pnlBudgetWrapper.Name = "pnlBudgetWrapper";
+
+            // Khu vực vẽ thanh ngang ngân sách — cuộn dọc khi nhiều dự án
+            pnlBudgetChart.Dock = DockStyle.Fill;
+            pnlBudgetChart.Margin = new Padding(0);
+            pnlBudgetChart.Name = "pnlBudgetChart";
+            pnlBudgetChart.AutoScroll = true;
+            pnlBudgetChart.BorderStyle = BorderStyle.None;
+            pnlBudgetChart.Paint += new PaintEventHandler(PnlBudgetChart_Paint);
+
+            // Khu vực legend cố định, tách biệt hoàn toàn khỏi vùng vẽ biểu đồ
+            pnlBudgetLegend.Dock = DockStyle.Fill;
+            pnlBudgetLegend.Margin = new Padding(0);
+            pnlBudgetLegend.Name = "pnlBudgetLegend";
+            pnlBudgetLegend.BorderStyle = BorderStyle.None;
+
+            // ── Form ──────────────────────────────────────────────────────────
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.BackColor = System.Drawing.Color.White;
-            this.ClientSize = new System.Drawing.Size(1200, 800);
-            this.Controls.Add(this.pnlContent);
-            this.Controls.Add(this.pnlToolbar);
-            this.Controls.Add(this.pnlHeader);
+            this.AutoScaleMode = AutoScaleMode.Font;
+            this.ClientSize = new Size(1200, 800);
+            this.Controls.Add(pnlContent);
+            this.Controls.Add(pnlToolbar);
+            this.Controls.Add(pnlHeader);
             this.Name = "frmDashboard";
             this.Text = "Dashboard Thống Kê";
-            this.Load += new System.EventHandler(this.frmDashboard_Load);
-            this.pnlToolbar.ResumeLayout(false);
-            this.pnlToolbar.PerformLayout();
-            this.pnlContent.ResumeLayout(false);
-            this.tabControlDashboard.ResumeLayout(false);
-            this.tabOverview.ResumeLayout(false);
-            this.pnlCharts.ResumeLayout(false);
-            this.tabProgress.ResumeLayout(false);
-            this.tabBudget.ResumeLayout(false);
-            this.ResumeLayout(false);
+            this.Load += new EventHandler(frmDashboard_Load);
 
+            pnlToolbar.ResumeLayout(false);
+            pnlToolbar.PerformLayout();
+            pnlContent.ResumeLayout(false);
+            tabControlDashboard.ResumeLayout(false);
+            tabOverview.ResumeLayout(false);
+            pnlOverviewBody.ResumeLayout(false);
+            pnlCardsLayout.ResumeLayout(false);
+            pnlPieChartArea.ResumeLayout(false);
+            pnlPieChartSplit.ResumeLayout(false);
+            tabProgress.ResumeLayout(false);
+            tabBudget.ResumeLayout(false);
+            pnlBudgetWrapper.ResumeLayout(false);
+            this.ResumeLayout(false);
         }
 
-        private System.Windows.Forms.Panel pnlHeader;
-        private System.Windows.Forms.Panel pnlToolbar;
-        private System.Windows.Forms.ComboBox cboProject;
-        private System.Windows.Forms.Label lblProjectFilter;
-        private System.Windows.Forms.Panel pnlContent;
-        private System.Windows.Forms.TabControl tabControlDashboard;
-        private System.Windows.Forms.TabPage tabOverview;
-        private System.Windows.Forms.TabPage tabProgress;
-        private System.Windows.Forms.TabPage tabBudget;
-        private System.Windows.Forms.FlowLayoutPanel pnlCards;
-        private System.Windows.Forms.TableLayoutPanel pnlCharts;
-        private System.Windows.Forms.Panel pnlPieChart;
-        private System.Windows.Forms.Panel pnlProgressChart;
-        private System.Windows.Forms.Panel pnlBudgetChart;
+        // ── Khai báo fields ───────────────────────────────────────────────────
+        private Panel pnlHeader;
+        private Panel pnlToolbar;
+        private Label lblProjectFilter;
+        private ComboBox cboProject;
+        private Panel pnlContent;
+        private TabControl tabControlDashboard;
+        private TabPage tabOverview;
+        private TableLayoutPanel pnlOverviewBody;
+        private TableLayoutPanel pnlCardsLayout;
+        private Panel pnlPieChartArea;
+        private TableLayoutPanel pnlPieChartSplit;
+        private Panel pnlPieChart;
+        private Panel pnlLegend;
+        private TabPage tabProgress;
+        private Panel pnlProgressChart;
+        private TabPage tabBudget;
+        private TableLayoutPanel pnlBudgetWrapper;
+        private Panel pnlBudgetChart;
+        private Panel pnlBudgetLegend;
     }
 }

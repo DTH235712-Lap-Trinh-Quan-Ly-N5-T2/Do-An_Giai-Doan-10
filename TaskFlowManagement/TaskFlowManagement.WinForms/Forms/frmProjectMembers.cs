@@ -4,16 +4,22 @@ using TaskFlowManagement.WinForms.Common;
 
 namespace TaskFlowManagement.WinForms.Forms
 {
-    /// <summary>
-    /// Quản lý thành viên dự án – thêm developer, gán vai trò, xóa (soft delete).
-    /// </summary>
     public partial class frmProjectMembers : BaseForm
     {
+        // ── Dependencies ──────────────────────────────────────────
         private readonly IProjectService _projectService;
         private readonly IUserService _userService;
         private readonly Project _project;
+
+        // ── State ─────────────────────────────────────────────────
         private List<ProjectMember> _members = new();
         private List<User> _availableUsers = new();
+
+        [Obsolete("Chỉ dùng cho WinForms Designer")]
+        public frmProjectMembers()
+        {
+            InitializeComponent();
+        }
 
         public frmProjectMembers(
             IProjectService projectService,
@@ -23,18 +29,60 @@ namespace TaskFlowManagement.WinForms.Forms
             _projectService = projectService;
             _userService = userService;
             _project = project;
-            InitializeComponent();
 
-            // Cập nhật tiêu đề header với tên dự án thực tế
+            InitializeComponent();
+            ApplyClientStyles();
+
             var title = $"👥  Thành viên — {_project.Name}";
             this.Text = title;
             lblTitle.Text = title;
 
-            // Developer chỉ xem, không thêm/xóa
             bool canEdit = AppSession.IsManager;
             panelAdd.Visible = canEdit;
             btnRemove.Visible = canEdit;
         }
+
+        // ── Khởi tạo giao diện ────────────────────────────────────
+
+        private void ApplyClientStyles()
+        {
+            // Header
+            panelHeader.BackColor = UIHelper.ColorHeaderBg;
+            panelAccent.BackColor = UIHelper.ColorPrimary;
+            lblTitle.Font = UIHelper.FontHeaderLarge;
+            lblTitle.ForeColor = UIHelper.ColorHeaderFg;
+
+            // Khu vực thêm thành viên
+            panelAdd.BackColor = UIHelper.ColorBackground;
+            tableAdd.BackColor = UIHelper.ColorBackground;
+            lblAddTitle.Font = new System.Drawing.Font("Segoe UI", 8F, System.Drawing.FontStyle.Bold);
+            lblAddTitle.ForeColor = UIHelper.ColorMuted;
+
+            cboUser.Font = UIHelper.FontBase;
+            cboUser.BackColor = UIHelper.ColorSurface;
+            cboProjectRole.Font = UIHelper.FontBase;
+            cboProjectRole.BackColor = UIHelper.ColorSurface;
+
+            UIHelper.StyleButton(btnAddMember, UIHelper.ButtonVariant.Primary);
+
+            // DataGridView
+            UIHelper.StyleDataGridView(dgvMembers);
+            UIHelper.ApplyAlternateRowColors(dgvMembers);
+
+            colJoinedAt.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+
+            // Footer
+            panelBottom.BackColor = UIHelper.ColorSurface;
+            panelBottomLine.BackColor = UIHelper.ColorBorderLight;
+            flowBottomBtns.BackColor = UIHelper.ColorSurface;
+            lblCount.Font = UIHelper.FontSmall;
+            lblCount.ForeColor = UIHelper.ColorMuted;
+
+            UIHelper.StyleButton(btnRemove, UIHelper.ButtonVariant.Danger);
+            UIHelper.StyleButton(btnClose, UIHelper.ButtonVariant.Secondary);
+        }
+
+        // ── Form Load ─────────────────────────────────────────────
 
         protected override async void OnLoad(EventArgs e)
         {
@@ -42,17 +90,17 @@ namespace TaskFlowManagement.WinForms.Forms
             await LoadMembersAsync();
             await LoadAvailableUsersAsync();
 
-            // Load danh sách vai trò trong dự án
             cboProjectRole.Items.AddRange(new object[] { "Developer", "Tester", "BA", "Tech Lead" });
             cboProjectRole.SelectedIndex = 0;
         }
 
-        // ── Load Data ─────────────────────────────────────────────────────────
+        // ── Data Loading ──────────────────────────────────────────
 
         private async Task LoadMembersAsync()
         {
             _members = await _projectService.GetMembersAsync(_project.Id);
             dgvMembers.Rows.Clear();
+
             foreach (var m in _members)
             {
                 dgvMembers.Rows.Add(
@@ -62,6 +110,7 @@ namespace TaskFlowManagement.WinForms.Forms
                     m.ProjectRole ?? "—",
                     m.JoinedAt.ToLocalTime().ToString("dd/MM/yyyy"));
             }
+
             lblCount.Text = $"{_members.Count} thành viên";
         }
 
@@ -74,13 +123,13 @@ namespace TaskFlowManagement.WinForms.Forms
             cboUser.Items.Clear();
             foreach (var u in _availableUsers)
                 cboUser.Items.Add($"{u.FullName}  ({u.Username})");
+
             if (cboUser.Items.Count > 0) cboUser.SelectedIndex = 0;
-            
-            // GD10: Tự động điều chỉnh kích thước Dropdown
+
             cboUser.AdjustDropDownWidth();
         }
 
-        // ── Events ────────────────────────────────────────────────────────────
+        // ── Event Handlers ────────────────────────────────────────
 
         private async void btnAddMember_Click(object sender, EventArgs e)
         {
@@ -92,7 +141,6 @@ namespace TaskFlowManagement.WinForms.Forms
                 return;
             }
 
-            // FIX BUG #3: Chống spam-click nút Thêm
             btnAddMember.Enabled = false;
             try
             {
@@ -112,22 +160,23 @@ namespace TaskFlowManagement.WinForms.Forms
             }
             finally
             {
-                btnAddMember.Enabled = true;
+                if (!this.IsDisposed) btnAddMember.Enabled = true;
             }
         }
 
         private async void btnRemove_Click(object sender, EventArgs e)
         {
             if (dgvMembers.SelectedRows.Count == 0) return;
+
             int userId = (int)dgvMembers.SelectedRows[0].Cells["colMemberId"].Value;
             var member = _members.FirstOrDefault(m => m.UserId == userId);
             if (member == null) return;
 
             if (MessageBox.Show(
                     $"Xóa \"{member.User?.FullName}\" khỏi dự án?\n\nLịch sử tham gia vẫn được lưu lại.",
-                    "Xác nhận", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
+                    "Xác nhận", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
+                return;
 
-            // FIX BUG #3: Chống spam-click nút Xóa thành viên
             btnRemove.Enabled = false;
             try
             {
@@ -140,11 +189,10 @@ namespace TaskFlowManagement.WinForms.Forms
             }
             finally
             {
-                btnRemove.Enabled = true;
+                if (!this.IsDisposed) btnRemove.Enabled = true;
             }
         }
 
-        private void btnClose_Click(object sender, EventArgs e)
-            => this.Close();
+        private void btnClose_Click(object sender, EventArgs e) => this.Close();
     }
 }

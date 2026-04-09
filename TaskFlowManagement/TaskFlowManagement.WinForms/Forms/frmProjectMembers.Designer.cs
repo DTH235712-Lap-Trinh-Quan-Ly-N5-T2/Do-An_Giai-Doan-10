@@ -1,8 +1,6 @@
-using TaskFlowManagement.WinForms.Common;
-
 namespace TaskFlowManagement.WinForms.Forms
 {
-    partial class frmProjectMembers   // BaseForm declared in frmProjectMembers.cs
+    partial class frmProjectMembers
     {
         private System.ComponentModel.IContainer components = null;
 
@@ -14,193 +12,299 @@ namespace TaskFlowManagement.WinForms.Forms
 
         private void InitializeComponent()
         {
-            // ── Instantiation ─────────────────────────────────────────────────
             panelHeader = new Panel();
             lblTitle = new Label();
             panelAccent = new Panel();
-
             dgvMembers = new DataGridView();
-
-            panelAdd = new Panel();
-            lblAddTitle = new Label();
-            cboUser = new ComboBox();
-            cboProjectRole = new ComboBox();
-            btnAddMember = new Button();
-
-            panelBottom = new Panel();
-            btnRemove = new Button();
-            btnClose = new Button();
-            lblCount = new Label();
-
             colMemberId = new DataGridViewTextBoxColumn();
             colMemberName = new DataGridViewTextBoxColumn();
             colMemberEmail = new DataGridViewTextBoxColumn();
             colMemberRole = new DataGridViewTextBoxColumn();
             colJoinedAt = new DataGridViewTextBoxColumn();
-
+            panelAdd = new Panel();
+            lblAddTitle = new Label();
+            tableAdd = new TableLayoutPanel();
+            cboUser = new ComboBox();
+            cboProjectRole = new ComboBox();
+            btnAddMember = new Button();
+            panelBottom = new Panel();
+            flowBottomBtns = new FlowLayoutPanel();
+            btnClose = new Button();
+            btnRemove = new Button();
+            lblCount = new Label();
+            panelBottomLine = new Panel();
             panelHeader.SuspendLayout();
-            panelAdd.SuspendLayout();
-            panelBottom.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)dgvMembers).BeginInit();
-            this.SuspendLayout();
-
-            // ════════════════════════════════════════════════════
-            // panelHeader — Dark banner
-            // ════════════════════════════════════════════════════
-            panelHeader.BackColor = UIHelper.ColorHeaderBg;
-            panelHeader.Dock = DockStyle.Top;
-            panelHeader.Height = 58;
-            panelHeader.Name = "panelHeader";
+            panelAdd.SuspendLayout();
+            tableAdd.SuspendLayout();
+            panelBottom.SuspendLayout();
+            flowBottomBtns.SuspendLayout();
+            SuspendLayout();
+            // 
+            // panelHeader
+            // 
             panelHeader.Controls.Add(lblTitle);
             panelHeader.Controls.Add(panelAccent);
-
-            lblTitle.AutoSize = false;
+            panelHeader.Dock = DockStyle.Top;
+            panelHeader.Location = new Point(0, 0);
+            panelHeader.Margin = new Padding(3, 4, 3, 4);
+            panelHeader.Name = "panelHeader";
+            panelHeader.Size = new Size(663, 77);
+            panelHeader.TabIndex = 3;
+            // 
+            // lblTitle
+            // 
             lblTitle.Dock = DockStyle.Fill;
-            lblTitle.Font = UIHelper.FontHeaderLarge;
-            lblTitle.ForeColor = UIHelper.ColorHeaderFg;
+            lblTitle.Location = new Point(0, 0);
             lblTitle.Name = "lblTitle";
-            lblTitle.Padding = new Padding(16, 0, 0, 0);
+            lblTitle.Padding = new Padding(21, 0, 0, 0);
+            lblTitle.Size = new Size(663, 72);
+            lblTitle.TabIndex = 0;
             lblTitle.Text = "👥  Thành viên dự án";
-            lblTitle.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-
-            // SỬA: Purple → Blue (#2563EB) để nhất quán; height 3 → 4
-            panelAccent.BackColor = System.Drawing.Color.FromArgb(37, 99, 235);
+            lblTitle.TextAlign = ContentAlignment.MiddleLeft;
+            // 
+            // panelAccent
+            // 
             panelAccent.Dock = DockStyle.Bottom;
-            panelAccent.Height = 4;
+            panelAccent.Location = new Point(0, 72);
+            panelAccent.Margin = new Padding(3, 4, 3, 4);
             panelAccent.Name = "panelAccent";
-
-            // ════════════════════════════════════════════════════
-            // dgvMembers — DataGridView
-            // SỬA: Toàn bộ hard-code → UIHelper.StyleDataGridView()
-            // ════════════════════════════════════════════════════
-            UIHelper.StyleDataGridView(dgvMembers);
-            UIHelper.ApplyAlternateRowColors(dgvMembers);
+            panelAccent.Size = new Size(663, 5);
+            panelAccent.TabIndex = 1;
+            // 
+            // dgvMembers
+            // 
+            dgvMembers.BorderStyle = BorderStyle.None;
+            dgvMembers.ColumnHeadersHeight = 29;
+            dgvMembers.Columns.AddRange(new DataGridViewColumn[] { colMemberId, colMemberName, colMemberEmail, colMemberRole, colJoinedAt });
             dgvMembers.Dock = DockStyle.Fill;
+            dgvMembers.Location = new Point(0, 77);
+            dgvMembers.Margin = new Padding(3, 4, 3, 4);
             dgvMembers.Name = "dgvMembers";
-            dgvMembers.RowTemplate.Height = 34;
-
-            colMemberId.Name = "colMemberId"; colMemberId.HeaderText = "ID"; colMemberId.Visible = false;
-            colMemberName.Name = "colMemberName"; colMemberName.HeaderText = "Họ tên"; colMemberName.Width = 180;
-            colMemberEmail.Name = "colMemberEmail"; colMemberEmail.HeaderText = "Email"; colMemberEmail.Width = 200;
-            colMemberRole.Name = "colMemberRole"; colMemberRole.HeaderText = "Vai trò DA"; colMemberRole.Width = 110;
-            colJoinedAt.Name = "colJoinedAt"; colJoinedAt.HeaderText = "Ngày tham gia"; colJoinedAt.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
-
-            dgvMembers.Columns.AddRange(new DataGridViewColumn[]
-            { colMemberId, colMemberName, colMemberEmail, colMemberRole, colJoinedAt });
-
-            // ════════════════════════════════════════════════════
-            // panelAdd — Khu vực thêm thành viên
-            // SỬA: hard-code #F8FAFC → UIHelper.ColorBackground
-            // ════════════════════════════════════════════════════
-            panelAdd.BackColor = UIHelper.ColorBackground;
+            dgvMembers.RowHeadersWidth = 51;
+            dgvMembers.RowTemplate.Height = 36;
+            dgvMembers.Size = new Size(663, 432);
+            dgvMembers.TabIndex = 0;
+            // 
+            // colMemberId
+            // 
+            colMemberId.MinimumWidth = 6;
+            colMemberId.Name = "colMemberId";
+            colMemberId.Visible = false;
+            colMemberId.Width = 125;
+            // 
+            // colMemberName
+            // 
+            colMemberName.HeaderText = "Họ tên";
+            colMemberName.MinimumWidth = 6;
+            colMemberName.Name = "colMemberName";
+            colMemberName.Width = 180;
+            // 
+            // colMemberEmail
+            // 
+            colMemberEmail.HeaderText = "Email";
+            colMemberEmail.MinimumWidth = 6;
+            colMemberEmail.Name = "colMemberEmail";
+            colMemberEmail.Width = 210;
+            // 
+            // colMemberRole
+            // 
+            colMemberRole.HeaderText = "Vai trò DA";
+            colMemberRole.MinimumWidth = 6;
+            colMemberRole.Name = "colMemberRole";
+            colMemberRole.Width = 110;
+            // 
+            // colJoinedAt
+            // 
+            colJoinedAt.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+            colJoinedAt.HeaderText = "Ngày tham gia";
+            colJoinedAt.MinimumWidth = 6;
+            colJoinedAt.Name = "colJoinedAt";
+            // 
+            // panelAdd
+            // 
+            panelAdd.Controls.Add(lblAddTitle);
+            panelAdd.Controls.Add(tableAdd);
             panelAdd.Dock = DockStyle.Bottom;
-            panelAdd.Height = 80;
+            panelAdd.Location = new Point(0, 509);
+            panelAdd.Margin = new Padding(3, 4, 3, 4);
             panelAdd.Name = "panelAdd";
-            panelAdd.Controls.AddRange(new Control[]
-            { lblAddTitle, cboUser, cboProjectRole, btnAddMember });
-
+            panelAdd.Padding = new Padding(18, 11, 18, 11);
+            panelAdd.Size = new Size(663, 109);
+            panelAdd.TabIndex = 1;
+            // 
+            // lblAddTitle
+            // 
             lblAddTitle.AutoSize = true;
-            lblAddTitle.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
-            lblAddTitle.ForeColor = UIHelper.ColorDark;
-            lblAddTitle.Location = new System.Drawing.Point(14, 8);
+            lblAddTitle.Dock = DockStyle.Top;
+            lblAddTitle.Location = new Point(18, 11);
             lblAddTitle.Name = "lblAddTitle";
+            lblAddTitle.Size = new Size(145, 21);
+            lblAddTitle.TabIndex = 0;
             lblAddTitle.Text = "THÊM THÀNH VIÊN";
-
+            // 
+            // tableAdd
+            // 
+            tableAdd.ColumnCount = 3;
+            tableAdd.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 60F));
+            tableAdd.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25F));
+            tableAdd.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 125F));
+            tableAdd.Controls.Add(cboUser, 0, 0);
+            tableAdd.Controls.Add(cboProjectRole, 1, 0);
+            tableAdd.Controls.Add(btnAddMember, 2, 0);
+            tableAdd.Dock = DockStyle.Fill;
+            tableAdd.GrowStyle = TableLayoutPanelGrowStyle.FixedSize;
+            tableAdd.Location = new Point(18, 11);
+            tableAdd.Margin = new Padding(3, 4, 3, 4);
+            tableAdd.Name = "tableAdd";
+            tableAdd.RowCount = 1;
+            tableAdd.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+            tableAdd.Size = new Size(627, 87);
+            tableAdd.TabIndex = 1;
+            // 
+            // cboUser
+            // 
+            cboUser.Anchor = AnchorStyles.Left | AnchorStyles.Right;
             cboUser.DropDownStyle = ComboBoxStyle.DropDownList;
-            cboUser.Font = UIHelper.FontBase;
-            cboUser.Location = new System.Drawing.Point(14, 30);
+            cboUser.Location = new Point(0, 29);
+            cboUser.Margin = new Padding(0, 0, 9, 0);
             cboUser.Name = "cboUser";
-            cboUser.Size = new System.Drawing.Size(270, 30);
-
+            cboUser.Size = new Size(345, 29);
+            cboUser.TabIndex = 0;
+            // 
+            // cboProjectRole
+            // 
+            cboProjectRole.Anchor = AnchorStyles.Left | AnchorStyles.Right;
             cboProjectRole.DropDownStyle = ComboBoxStyle.DropDownList;
-            cboProjectRole.Font = UIHelper.FontBase;
-            cboProjectRole.Location = new System.Drawing.Point(294, 30);
+            cboProjectRole.Location = new Point(354, 29);
+            cboProjectRole.Margin = new Padding(0, 0, 9, 0);
             cboProjectRole.Name = "cboProjectRole";
-            cboProjectRole.Size = new System.Drawing.Size(120, 30);
-
-            // btnAddMember — Primary (SỬA: hard-code → UIHelper)
-            UIHelper.StyleButton(btnAddMember, UIHelper.ButtonVariant.Primary);
-            btnAddMember.Location = new System.Drawing.Point(424, 30);
+            cboProjectRole.Size = new Size(138, 29);
+            cboProjectRole.TabIndex = 1;
+            // 
+            // btnAddMember
+            // 
+            btnAddMember.Anchor = AnchorStyles.Left | AnchorStyles.Right;
+            btnAddMember.Location = new Point(501, 28);
+            btnAddMember.Margin = new Padding(0);
             btnAddMember.Name = "btnAddMember";
-            btnAddMember.Size = new System.Drawing.Size(100, 30);
+            btnAddMember.Size = new Size(126, 31);
+            btnAddMember.TabIndex = 2;
             btnAddMember.Text = "➕  Thêm";
             btnAddMember.Click += btnAddMember_Click;
-
-            // ════════════════════════════════════════════════════
-            // panelBottom — Nút xóa, đóng + count
-            // SỬA: BackColor White → UIHelper.ColorSurface
-            // ════════════════════════════════════════════════════
-            panelBottom.BackColor = UIHelper.ColorSurface;
+            // 
+            // panelBottom
+            // 
+            panelBottom.Controls.Add(flowBottomBtns);
+            panelBottom.Controls.Add(lblCount);
+            panelBottom.Controls.Add(panelBottomLine);
             panelBottom.Dock = DockStyle.Bottom;
-            panelBottom.Height = 52;
+            panelBottom.Location = new Point(0, 618);
+            panelBottom.Margin = new Padding(3, 4, 3, 4);
             panelBottom.Name = "panelBottom";
-            panelBottom.Controls.AddRange(new Control[] { btnRemove, lblCount, btnClose });
-
-            // btnRemove — Danger (SỬA: hard-code → UIHelper)
-            UIHelper.StyleButton(btnRemove, UIHelper.ButtonVariant.Danger);
-            btnRemove.Location = new System.Drawing.Point(14, 10);
+            panelBottom.Padding = new Padding(18, 0, 18, 0);
+            panelBottom.Size = new Size(663, 75);
+            panelBottom.TabIndex = 2;
+            // 
+            // flowBottomBtns
+            // 
+            flowBottomBtns.Controls.Add(btnClose);
+            flowBottomBtns.Controls.Add(btnRemove);
+            flowBottomBtns.Dock = DockStyle.Right;
+            flowBottomBtns.FlowDirection = FlowDirection.RightToLeft;
+            flowBottomBtns.Location = new Point(318, 1);
+            flowBottomBtns.Margin = new Padding(3, 4, 3, 4);
+            flowBottomBtns.Name = "flowBottomBtns";
+            flowBottomBtns.Padding = new Padding(0, 13, 0, 13);
+            flowBottomBtns.Size = new Size(327, 74);
+            flowBottomBtns.TabIndex = 0;
+            flowBottomBtns.WrapContents = false;
+            // 
+            // btnClose
+            // 
+            btnClose.Location = new Point(201, 13);
+            btnClose.Margin = new Padding(0);
+            btnClose.Name = "btnClose";
+            btnClose.Size = new Size(126, 47);
+            btnClose.TabIndex = 0;
+            btnClose.Text = "Đóng";
+            btnClose.Click += btnClose_Click;
+            // 
+            // btnRemove
+            // 
+            btnRemove.Location = new Point(9, 13);
+            btnRemove.Margin = new Padding(0, 0, 9, 0);
             btnRemove.Name = "btnRemove";
-            btnRemove.Size = new System.Drawing.Size(150, 32);
+            btnRemove.Size = new Size(183, 47);
+            btnRemove.TabIndex = 1;
             btnRemove.Text = "🗑️  Xóa thành viên";
             btnRemove.Click += btnRemove_Click;
-
-            lblCount.AutoSize = false;
-            lblCount.Font = UIHelper.FontSmall;
-            lblCount.ForeColor = UIHelper.ColorMuted;
-            lblCount.Location = new System.Drawing.Point(174, 10);
+            // 
+            // lblCount
+            // 
+            lblCount.Dock = DockStyle.Left;
+            lblCount.Location = new Point(18, 1);
             lblCount.Name = "lblCount";
-            lblCount.Size = new System.Drawing.Size(200, 32);
-            lblCount.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-
-            // btnClose — Secondary (SỬA: hard-code → UIHelper)
-            UIHelper.StyleButton(btnClose, UIHelper.ButtonVariant.Secondary);
-            btnClose.Location = new System.Drawing.Point(428, 10);
-            btnClose.Name = "btnClose";
-            btnClose.Size = new System.Drawing.Size(96, 32);
-            btnClose.Text = "Đóng";
-            btnClose.Font = UIHelper.FontBase;
-            btnClose.Click += btnClose_Click;
-
-            // ════════════════════════════════════════════════════
-            // Form
-            // ════════════════════════════════════════════════════
-            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
-            this.AutoScaleMode = AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(560, 500);
-            this.Font = UIHelper.FontBase;
-            this.FormBorderStyle = FormBorderStyle.FixedDialog;
-            this.MaximizeBox = false;
-            this.MinimizeBox = false;
-            this.Name = "frmProjectMembers";
-            this.StartPosition = FormStartPosition.CenterParent;
-            this.Text = "Thành viên dự án";
-
-            // Thứ tự Add: Fill → Bottom panels → Top
-            this.Controls.Add(dgvMembers);    // DockStyle.Fill
-            this.Controls.Add(panelAdd);      // DockStyle.Bottom (thứ nhất từ dưới lên)
-            this.Controls.Add(panelBottom);   // DockStyle.Bottom (tiếp theo)
-            this.Controls.Add(panelHeader);   // DockStyle.Top
-
+            lblCount.Size = new Size(229, 74);
+            lblCount.TabIndex = 1;
+            lblCount.TextAlign = ContentAlignment.MiddleLeft;
+            // 
+            // panelBottomLine
+            // 
+            panelBottomLine.Dock = DockStyle.Top;
+            panelBottomLine.Location = new Point(18, 0);
+            panelBottomLine.Margin = new Padding(3, 4, 3, 4);
+            panelBottomLine.Name = "panelBottomLine";
+            panelBottomLine.Size = new Size(627, 1);
+            panelBottomLine.TabIndex = 2;
+            // 
+            // frmProjectMembers
+            // 
+            AutoScaleDimensions = new SizeF(8F, 20F);
+            AutoScaleMode = AutoScaleMode.Font;
+            ClientSize = new Size(663, 693);
+            Controls.Add(dgvMembers);
+            Controls.Add(panelAdd);
+            Controls.Add(panelBottom);
+            Controls.Add(panelHeader);
+            FormBorderStyle = FormBorderStyle.FixedDialog;
+            Margin = new Padding(3, 5, 3, 5);
+            MaximizeBox = false;
+            MinimizeBox = false;
+            Name = "frmProjectMembers";
+            StartPosition = FormStartPosition.CenterParent;
+            Text = "Thành viên dự án";
             panelHeader.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)dgvMembers).EndInit();
             panelAdd.ResumeLayout(false);
             panelAdd.PerformLayout();
+            tableAdd.ResumeLayout(false);
             panelBottom.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)dgvMembers).EndInit();
-            this.ResumeLayout(false);
+            flowBottomBtns.ResumeLayout(false);
+            ResumeLayout(false);
         }
 
-        // ── Field declarations ────────────────────────────────────────────────
-        private Panel panelHeader, panelAccent;
+        // ── Fields ───────────────────────────────────────────────
+        private Panel panelHeader;
+        private Panel panelAccent;
         private Label lblTitle;
         private DataGridView dgvMembers;
+        private DataGridViewTextBoxColumn colMemberId;
+        private DataGridViewTextBoxColumn colMemberName;
+        private DataGridViewTextBoxColumn colMemberEmail;
+        private DataGridViewTextBoxColumn colMemberRole;
+        private DataGridViewTextBoxColumn colJoinedAt;
         private Panel panelAdd;
         private Label lblAddTitle;
-        private ComboBox cboUser, cboProjectRole;
+        private TableLayoutPanel tableAdd;
+        private ComboBox cboUser;
+        private ComboBox cboProjectRole;
         private Button btnAddMember;
         private Panel panelBottom;
-        private Button btnRemove, btnClose;
+        private Panel panelBottomLine;
         private Label lblCount;
-        private DataGridViewTextBoxColumn colMemberId, colMemberName;
-        private DataGridViewTextBoxColumn colMemberEmail, colMemberRole, colJoinedAt;
+        private FlowLayoutPanel flowBottomBtns;
+        private Button btnRemove;
+        private Button btnClose;
     }
 }

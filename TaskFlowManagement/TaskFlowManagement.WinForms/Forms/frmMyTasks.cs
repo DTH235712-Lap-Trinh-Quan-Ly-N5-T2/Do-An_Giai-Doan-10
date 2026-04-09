@@ -1,22 +1,6 @@
 // ============================================================
-//  frmMyTasks.cs  (REFACTORED)
+//  frmMyTasks.cs
 //  TaskFlowManagement.WinForms.Forms
-//
-//  THAY ĐỔI SO VỚI PHIÊN BẢN CŨ:
-//  ─────────────────────────────────────────────────────────
-//  [UI]
-//   • Kế thừa BaseForm thay vì Form trực tiếp
-//
-//  [Dead Code đã xóa]
-//   • ApplyRowColor(DataGridViewRow, TaskItem) private static → ĐÃ XÓA
-//     Lý do: Hoàn toàn trùng lặp với UIHelper.ApplyTaskRowStyle()
-//     Thay bằng UIHelper.ApplyTaskRowStyle() trong BindGrid() để
-//     đồng bộ 100% màu sắc với frmTaskList (single source of truth).
-//
-//  [Logic giữ nguyên 100%]
-//   • OnLoad, LoadWelcomeInfo (đặt lại lblHeader trong Designer)
-//   • ApplyRolePermissions, LoadAllTabsAsync
-//   • BindGrid, btnRefresh_Click, dgv_CellDoubleClick
 // ============================================================
 using TaskFlowManagement.Core.Entities;
 using TaskFlowManagement.Core.Interfaces.Services;
@@ -25,15 +9,9 @@ using TaskFlowManagement.WinForms.Common;
 namespace TaskFlowManagement.WinForms.Forms
 {
     /// <summary>
-    /// Form "Công việc của tôi" — hiển thị task liên quan đến user đang đăng nhập.
-    ///
-    /// Chia 3 tab:
-    ///   - Tab 1 "Được giao cho tôi" : task mà AssignedToId = UserId hiện tại
-    ///   - Tab 2 "Tôi cần Review"    : task mà Reviewer1Id hoặc Reviewer2Id = UserId
-    ///   - Tab 3 "Tôi cần Test"      : task mà TesterId = UserId
-    ///
-    /// Developer chỉ thấy tab 1.
-    /// Manager/Admin thấy cả 3 tab.
+    /// Form công việc cá nhân — hiển thị task liên quan đến user đang đăng nhập.
+    /// Tab 1: task được giao | Tab 2: cần Review | Tab 3: cần Test.
+    /// Developer chỉ thấy Tab 1. Manager/Admin thấy cả 3.
     /// </summary>
     public partial class frmMyTasks : BaseForm
     {
@@ -44,18 +22,12 @@ namespace TaskFlowManagement.WinForms.Forms
 
         // ── Constructors ──────────────────────────────────────────────────────
 
-        /// <summary>
-        /// Constructor mặc định — BẮT BUỘC để tab [Design] không lỗi.
-        /// </summary>
-        [Obsolete("Dùng constructor DI(ITaskService, IProjectService, IUserService). Constructor này chỉ dành cho VS Designer.")]
+        [Obsolete("Chỉ dùng cho WinForms Designer")]
         public frmMyTasks()
         {
             InitializeComponent();
         }
 
-        /// <summary>
-        /// Constructor DI — ServiceProvider gọi cái này khi chạy thật.
-        /// </summary>
         public frmMyTasks(
             ITaskService taskService,
             IProjectService projectService,
@@ -68,24 +40,107 @@ namespace TaskFlowManagement.WinForms.Forms
             _projectService = projectService;
             _userService = userService;
 
+            ApplyClientStyles();
+
             _taskService.TaskDataChanged += OnTaskDataChanged;
         }
 
-        private async void OnTaskDataChanged(object? sender, EventArgs e)
+        // ── Áp dụng toàn bộ style, font, màu sắc, cấu hình grid ─────────────
+        private void ApplyClientStyles()
         {
-            if (this.IsHandleCreated && !this.IsDisposed)
+            this.Font = UIHelper.FontBase;
+            this.BackColor = UIHelper.ColorBackground;
+
+            panelHeader.BackColor = UIHelper.ColorHeaderBg;
+            panelAccentLine.BackColor = UIHelper.ColorAccent;
+            lblHeader.Font = UIHelper.FontHeaderLarge;
+            lblHeader.ForeColor = UIHelper.ColorHeaderFg;
+
+            panelFilter.BackColor = UIHelper.ColorBackground;
+            lblUser.Font = UIHelper.FontBase;
+            lblUser.ForeColor = UIHelper.ColorPrimary;
+
+            UIHelper.StyleButton(btnRefresh, UIHelper.ButtonVariant.Secondary);
+
+            panelStatus.BackColor = UIHelper.ColorHeaderBg;
+            lblStatus.Font = UIHelper.FontSmall;
+            lblStatus.ForeColor = UIHelper.ColorSubtitle;
+
+            tabControl.Font = UIHelper.FontBase;
+
+            // Cấu hình UI GridView
+            ConfigureGrid(dgvMyTasks);
+            ConfigureGrid(dgvReview);
+            ConfigureGrid(dgvTesting);
+        }
+
+        // ── Cấu hình một DataGridView theo chuẩn chung ───────────────────────
+        private static void ConfigureGrid(DataGridView dgv)
+        {
+            UIHelper.StyleDataGridView(dgv);
+            UIHelper.ApplyAlternateRowColors(dgv);
+            dgv.RowTemplate.Height = 35;
+
+            var colId = new DataGridViewTextBoxColumn
             {
-                this.Invoke((MethodInvoker)(async () => await LoadAllTabsAsync()));
-            }
+                Name = "colId",
+                HeaderText = "ID",
+                Width = 50,
+                Visible = false,
+            };
+            var colTitle = new DataGridViewTextBoxColumn
+            {
+                Name = "colTitle",
+                HeaderText = "Tiêu đề công việc",
+                AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill,
+                MinimumWidth = 200,
+                DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleLeft },
+            };
+            var colProject = new DataGridViewTextBoxColumn
+            {
+                Name = "colProject",
+                HeaderText = "Dự án",
+                Width = 150,
+                DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleLeft },
+            };
+            var colPriority = new DataGridViewTextBoxColumn
+            {
+                Name = "colPriority",
+                HeaderText = "Ưu tiên",
+                Width = 85,
+                DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter },
+            };
+            var colStatus = new DataGridViewTextBoxColumn
+            {
+                Name = "colStatus",
+                HeaderText = "Trạng thái",
+                Width = 130,
+                DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter },
+            };
+            var colProgress = new DataGridViewTextBoxColumn
+            {
+                Name = "colProgress",
+                HeaderText = "%",
+                Width = 55,
+                DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleRight },
+            };
+            var colDueDate = new DataGridViewTextBoxColumn
+            {
+                Name = "colDueDate",
+                HeaderText = "Hạn chót",
+                Width = 105,
+                DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter },
+            };
+
+            dgv.Columns.AddRange(new DataGridViewColumn[]
+                { colId, colTitle, colProject, colPriority, colStatus, colProgress, colDueDate });
         }
 
         // ── Form Load ─────────────────────────────────────────────────────────
-
         protected override async void OnLoad(EventArgs e)
         {
             base.OnLoad(e);
 
-            // Cập nhật tiêu đề form + header banner với thông tin user thực tế
             var title = $"📋  Công việc của tôi — {AppSession.FullName}";
             this.Text = title;
             lblHeader.Text = title;
@@ -95,9 +150,7 @@ namespace TaskFlowManagement.WinForms.Forms
             await LoadAllTabsAsync();
         }
 
-        // ── Role permissions ──────────────────────────────────────────────────
-
-        /// <summary>Developer không thực hiện Review/Test → ẩn 2 tab đó.</summary>
+        // ── Phân quyền hiển thị tab ───────────────────────────────────────────
         private void ApplyRolePermissions()
         {
             bool canReviewOrTest = AppSession.IsManager;
@@ -105,15 +158,13 @@ namespace TaskFlowManagement.WinForms.Forms
             tabTesting.Parent = canReviewOrTest ? tabControl : null;
         }
 
-        // ── Load Data ─────────────────────────────────────────────────────────
-
+        // ── Tải dữ liệu song song cho cả 3 tab ───────────────────────────────
         private async Task LoadAllTabsAsync()
         {
             SetStatus("⏳  Đang tải...");
 
             try
             {
-                // Load song song 4 nguồn để tiết kiệm thời gian chờ
                 var tMine = _taskService.GetMyTasksAsync(AppSession.UserId);
                 var tReview1 = _taskService.GetTasksForReviewer1Async(AppSession.UserId);
                 var tReview2 = _taskService.GetTasksForReviewer2Async(AppSession.UserId);
@@ -121,14 +172,12 @@ namespace TaskFlowManagement.WinForms.Forms
 
                 await Task.WhenAll(tMine, tReview1, tReview2, tTest);
 
-                // Gộp Review1 + Review2 vào 1 tab
                 var reviewTasks = tReview1.Result.Concat(tReview2.Result).ToList();
 
                 BindGrid(dgvMyTasks, tMine.Result);
                 BindGrid(dgvReview, reviewTasks);
                 BindGrid(dgvTesting, tTest.Result);
 
-                // Cập nhật số lượng task lên tiêu đề tab
                 tabMyTasks.Text = $"📋  Được giao ({tMine.Result.Count})";
                 tabReview.Text = $"🔍  Review ({reviewTasks.Count})";
                 tabTesting.Text = $"🧪  Testing ({tTest.Result.Count})";
@@ -141,14 +190,11 @@ namespace TaskFlowManagement.WinForms.Forms
                 SetStatus("⚠  Lỗi tải dữ liệu.");
                 MessageBox.Show(
                     "Không thể tải dữ liệu:\n" + ex.Message,
-                    "Lỗi",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error);
+                    "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
-        // ── Grid Binding ──────────────────────────────────────────────────────
-
+        // ── Bind dữ liệu vào grid ─────────────────────────────────────────────
         private static void BindGrid(DataGridView dgv, List<TaskItem> items)
         {
             dgv.Rows.Clear();
@@ -159,7 +205,6 @@ namespace TaskFlowManagement.WinForms.Forms
                     ? t.DueDate.Value.ToLocalTime().ToString("dd/MM/yyyy")
                     : "—";
 
-                // Thứ tự cột: colId | colTitle | colProject | colPriority | colStatus | colProgress | colDueDate
                 int idx = dgv.Rows.Add(
                     t.Id,
                     t.Title,
@@ -169,8 +214,6 @@ namespace TaskFlowManagement.WinForms.Forms
                     $"{t.ProgressPercent}%",
                     due);
 
-                // [REFACTOR] Dùng UIHelper.ApplyTaskRowStyle() — single source of truth
-                // Đã xóa private ApplyRowColor() bị duplicate ở đây.
                 UIHelper.ApplyTaskRowStyle(
                     dgv.Rows[idx],
                     t.Status?.Name,
@@ -179,14 +222,10 @@ namespace TaskFlowManagement.WinForms.Forms
             }
         }
 
-        // ── Events ────────────────────────────────────────────────────────────
-
+        // ── Sự kiện ───────────────────────────────────────────────────────────
         private async void btnRefresh_Click(object sender, EventArgs e)
             => await LoadAllTabsAsync();
 
-        /// <summary>
-        /// Double-click vào bất kỳ DataGridView nào → mở frmTaskEdit để xem/sửa chi tiết.
-        /// </summary>
         private void dgv_CellDoubleClick(object sender, DataGridViewCellEventArgs e)
         {
             if (e.RowIndex < 0) return;
@@ -202,8 +241,14 @@ namespace TaskFlowManagement.WinForms.Forms
                 _ = LoadAllTabsAsync();
         }
 
-        // ── Helpers ───────────────────────────────────────────────────────────
+        // ── Lắng nghe thay đổi dữ liệu từ form khác ──────────────────────────
+        private async void OnTaskDataChanged(object? sender, EventArgs e)
+        {
+            if (this.IsHandleCreated && !this.IsDisposed)
+                this.Invoke((MethodInvoker)(async () => await LoadAllTabsAsync()));
+        }
 
+        // ── Thanh trạng thái ─────────────────────────────────────────────────
         private void SetStatus(string msg)
         {
             if (lblStatus != null && !lblStatus.IsDisposed)
