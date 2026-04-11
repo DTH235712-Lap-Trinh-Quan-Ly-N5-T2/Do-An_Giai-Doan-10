@@ -523,5 +523,29 @@ namespace TaskFlowManagement.Core.Services.Tasks
 
              return (true, "Đã xóa file đính kèm.");
         }
+
+        // ══════════════════════════════════════════════════════
+        // CASCADING UPDATE — Đồng bộ TaskCode khi ProjectCode thay đổi
+        // ══════════════════════════════════════════════════════
+
+        /// <inheritdoc/>
+        public async Task SyncTaskCodesAsync(int projectId, string newProjectCode)
+        {
+            if (string.IsNullOrWhiteSpace(newProjectCode))
+                return;
+
+            // Lấy toàn bộ task của dự án, sắp theo Id tăng dần để giữ đúng thứ tự sinh mã ban đầu
+            var tasks = await _taskRepo.GetByProjectAsync(projectId);
+            var ordered = tasks.OrderBy(t => t.Id).ToList();
+
+            for (int i = 0; i < ordered.Count; i++)
+            {
+                ordered[i].TaskCode = $"{newProjectCode}-{i + 1}";
+                await _taskRepo.UpdateAsync(ordered[i]);
+            }
+
+            if (ordered.Count > 0)
+                NotifyDataChanged();
+        }
     }
 }

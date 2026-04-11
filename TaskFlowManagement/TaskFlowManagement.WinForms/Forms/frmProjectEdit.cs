@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection;
 using TaskFlowManagement.Core.Entities;
 using TaskFlowManagement.Core.Interfaces;
 using TaskFlowManagement.Core.Interfaces.Services;
@@ -255,8 +256,11 @@ namespace TaskFlowManagement.WinForms.Forms
 
                 if (_isEdit)
                 {
-                    _editProject!.Name        = txtName.Text.Trim();
-                    _editProject.ProjectCode  = projectCode;          // ← FIX: luôn cập nhật mã
+                    // Lưu mã cũ TRƯỚC khi gán mã mới để so sánh sau
+                    string oldProjectCode = _editProject!.ProjectCode ?? string.Empty;
+
+                    _editProject.Name         = txtName.Text.Trim();
+                    _editProject.ProjectCode  = projectCode;          // ← luôn cập nhật mã
                     _editProject.Description  = NullIfEmpty(txtDescription.Text);
                     _editProject.CustomerId   = customerId;
                     _editProject.OwnerId      = ownerId;
@@ -266,8 +270,23 @@ namespace TaskFlowManagement.WinForms.Forms
                     _editProject.Priority     = (byte)(cboPriority.SelectedIndex + 1);
 
                     var (ok, msg) = await _projectService.UpdateProjectAsync(_editProject);
-                    if (ok) { this.DialogResult = DialogResult.OK; this.Close(); }
-                    else lblError.Text = "⚠  " + msg;
+                    if (ok)
+                    {
+                        // ── Cascading Update: đồng bộ TaskCode nếu ProjectCode thay đổi ──
+                        if (!string.Equals(oldProjectCode, projectCode, StringComparison.OrdinalIgnoreCase))
+                        {
+                            var taskSvc = Program.ServiceProvider
+                                .GetRequiredService<ITaskService>();
+                            await taskSvc.SyncTaskCodesAsync(_editProject.Id, projectCode);
+                        }
+
+                        this.DialogResult = DialogResult.OK;
+                        this.Close();
+                    }
+                    else
+                    {
+                        lblError.Text = "⚠  " + msg;
+                    }
                 }
                 else
                 {

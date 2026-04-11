@@ -203,5 +203,14 @@ namespace TaskFlowManagement.Core.Interfaces.Services
             int attachmentId, 
             int requesterId, 
             IList<string> requesterRoles);
+
+        // ── Cascading Update ──────────────────────────────────────
+
+        /// <summary>
+        /// Đồng bộ lại TaskCode của toàn bộ Task thuộc <paramref name="projectId"/>
+        /// theo tiền tố mới khi ProjectCode của dự án thay đổi.
+        /// Format: {newProjectCode}-{thứ tự} (sắp xếp theo Id tăng dần).
+        /// </summary>
+        Task SyncTaskCodesAsync(int projectId, string newProjectCode);
     }
 }
