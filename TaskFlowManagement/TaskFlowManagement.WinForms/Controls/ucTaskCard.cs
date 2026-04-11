@@ -120,6 +120,23 @@ namespace TaskFlowManagement.WinForms.Controls
             pnlProgressFill.Width = (int)(pnlProgressTrack.Width * progress / 100.0);
             lblProgress.Text      = $"{progress}%";
 
+            // ── Sửa Lỗi 1: Dynamic Layout — tránh đè nhãn Status / Priority / DueDate ──
+            // lblPriority bắt đầu ngay sau lblStatus, cách 8px
+            lblPriority.Left = lblStatus.Right + 8;
+            // lblDueDate bắt đầu ngay sau lblPriority, cách 8px (nếu đang hiện)
+            if (lblDueDate.Visible)
+                lblDueDate.Left = lblPriority.Right + 8;
+
+            // ── Sửa Lỗi 2: Dynamic Layout — tránh Progress Bar chèn ép lblProgress ──
+            // Thu hẹp thanh bar để dành chỗ cho nhãn phần trăm bên phải
+            pnlProgressTrack.Width = this.Width - 80;
+            // Tính lại fill sau khi đổi width track
+            pnlProgressFill.Width = (int)(pnlProgressTrack.Width * progress / 100.0);
+            // Đẩy lblProgress ra ngay sau thanh bar, căn giữa theo trục dọc
+            lblProgress.Left = pnlProgressTrack.Right + 5;
+            lblProgress.Top  = pnlProgressTrack.Top
+                               + (pnlProgressTrack.Height - lblProgress.Height) / 2;
+
             UpdateMenuItemState();
         }
 

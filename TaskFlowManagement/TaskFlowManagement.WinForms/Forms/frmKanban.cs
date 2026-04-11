@@ -67,7 +67,11 @@ namespace TaskFlowManagement.WinForms.Forms
         private async void OnTaskDataChanged(object? sender, EventArgs e)
         {
             if (this.IsHandleCreated && !this.IsDisposed)
-                this.Invoke((MethodInvoker)(async () => await LoadTasksAsync()));
+                // BeginInvoke (thay vì Invoke) tránh deadlock với async lambda
+                this.BeginInvoke(async () =>
+                {
+                    if (!this.IsDisposed) await LoadTasksAsync();
+                });
         }
 
         // ── Làm đẹp: toàn bộ màu sắc, font, style ────────────────────────────
@@ -283,6 +287,10 @@ namespace TaskFlowManagement.WinForms.Forms
             SetStatus("⏳  Đang tải dữ liệu...");
             ClearAllColumns();
 
+            // ── Chống Lag: Tạm dừng layout toàn bộ cột trước khi render ──────
+            foreach (var flp in GetAllColumns())
+                flp.SuspendLayout();
+
             try
             {
                 var tasks = await _taskService!.GetBoardTasksAsync(_projectId);
@@ -302,6 +310,12 @@ namespace TaskFlowManagement.WinForms.Forms
                 MessageBox.Show("Không thể tải Kanban board:\n" + ex.Message,
                     "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+            finally
+            {
+                // ── Chống Lag: Khôi phục layout sau khi render xong ──────────
+                foreach (var flp in GetAllColumns())
+                    flp.ResumeLayout(performLayout: true);
+            }
         }
 
         // ── Tạo thẻ công việc ────────────────────────────────────────────────
@@ -319,14 +333,14 @@ namespace TaskFlowManagement.WinForms.Forms
         {
             foreach (var panel in GetAllColumns())
             {
-                foreach (Control ctrl in panel.Controls)
+                // ── Chống Memory Leak: hủy event và Dispose từng card ────────
+                var cards = panel.Controls.OfType<ucTaskCard>().ToList();
+                foreach (var card in cards)
                 {
-                    if (ctrl is ucTaskCard card)
-                    {
-                        card.StatusChanged -= TaskCard_StatusChanged;
-                        card.CardDoubleClicked -= TaskCard_DoubleClicked;
-                        card.TitleChanged -= TaskCard_TitleChanged;
-                    }
+                    card.StatusChanged     -= TaskCard_StatusChanged;
+                    card.CardDoubleClicked -= TaskCard_DoubleClicked;
+                    card.TitleChanged      -= TaskCard_TitleChanged;
+                    card.Dispose();
                 }
                 panel.Controls.Clear();
             }
@@ -339,6 +353,7 @@ namespace TaskFlowManagement.WinForms.Forms
 
             try
             {
+                // ── GIỮ NGUYÊN: gọi DB bình thường, await được phép ───────────────
                 var (success, message) = await _taskService!.UpdateStatusAsync(
                     e.TaskId, e.NewStatusId, AppSession.UserId, AppSession.Roles);
 
@@ -348,15 +363,23 @@ namespace TaskFlowManagement.WinForms.Forms
                     return;
                 }
 
-                if (card.Parent is FlowLayoutPanel src) src.Controls.Remove(card);
+                // ── FIX ObjectDisposedException: bọc phần cập nhật UI vào BeginInvoke ──
+                // DB đã được commit, event call stack đã kết thúc sau await ở trên.
+                // BeginInvoke đảm bảo các thao tác UI này chạy sau khi stack tă kết thúc.
+                this.BeginInvoke(() =>
+                {
+                    if (this.IsDisposed || card.IsDisposed) return;
 
-                if (card.Tag is TaskItem task) task.StatusId = e.NewStatusId;
+                    if (card.Parent is FlowLayoutPanel src) src.Controls.Remove(card);
 
-                card.UpdateBoundStatus(e.NewStatusId);
-                MoveCardToStatusPanel(card, e.NewStatusId);
-                UpdateAllColumnBadges();
+                    if (card.Tag is TaskItem task) task.StatusId = e.NewStatusId;
 
-                ShowToast($"✔  Đã chuyển sang {Core.Constants.WorkflowConstants.GetStatusName(e.NewStatusId)}");
+                    card.UpdateBoundStatus(e.NewStatusId);
+                    MoveCardToStatusPanel(card, e.NewStatusId);
+                    UpdateAllColumnBadges();
+
+                    ShowToast($"✔  Đã chuyển sang {Core.Constants.WorkflowConstants.GetStatusName(e.NewStatusId)}");
+                });
             }
             catch (Exception ex)
             {
@@ -365,20 +388,28 @@ namespace TaskFlowManagement.WinForms.Forms
         }
 
         // ── Xử lý sự kiện: mở form chi tiết ─────────────────────────────────
-        private async void TaskCard_DoubleClicked(object? sender, int taskId)
+        private void TaskCard_DoubleClicked(object? sender, int taskId)
         {
-            try
+            // ── FIX ObjectDisposedException ──────────────────────────────────
+            // Dùng BeginInvoke để post lệnh mở form ra khỏi call stack hiện tại.
+            // Điều này cho phép event handler kết thúc an toàn TRƯỚC khi
+            // LoadTasksAsync() → ClearAllColumns() → card.Dispose() được gọi.
+            this.BeginInvoke(async () =>
             {
-                using var detailForm = new frmTaskEdit(
-                    _taskService!, _projectService!, _userService!, taskId);
+                if (this.IsDisposed) return;
+                try
+                {
+                    using var detailForm = new frmTaskEdit(
+                        _taskService!, _projectService!, _userService!, taskId);
 
-                if (detailForm.ShowDialog() == DialogResult.OK)
-                    await LoadTasksAsync();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Lỗi khi mở chi tiết: " + ex.Message, "Lỗi");
-            }
+                    if (detailForm.ShowDialog() == DialogResult.OK)
+                        await LoadTasksAsync();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Lỗi khi mở chi tiết: " + ex.Message, "Lỗi");
+                }
+            });
         }
 
         // ── Xử lý sự kiện: sửa tiêu đề inline ───────────────────────────────
@@ -402,12 +433,14 @@ namespace TaskFlowManagement.WinForms.Forms
 
                 if (success)
                 {
-                    if (sender is ucTaskCard card) card.Tag = task;
+                    // card.Tag cập nhật nhẹ — không reload, không Dispose risk
+                    if (sender is ucTaskCard card && !card.IsDisposed) card.Tag = task;
                     ShowToast($"✔  Đã lưu: \"{e.NewTitle}\"");
                 }
                 else
                 {
-                    if (sender is ucTaskCard card) card.Bind(task);
+                    // Chỉ gọi Bind() nếu card vẫn còn sống
+                    if (sender is ucTaskCard card && !card.IsDisposed) card.Bind(task);
                     ShowToast($"⚠  {message}", isError: true);
                 }
             }
