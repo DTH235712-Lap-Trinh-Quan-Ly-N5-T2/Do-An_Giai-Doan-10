@@ -43,6 +43,11 @@ namespace TaskFlowManagement.WinForms.Forms
             ApplyClientStyles();
 
             _taskService.TaskDataChanged += OnTaskDataChanged;
+
+            // Đăng ký CellFormatting chung cho cả 3 grid với cùng 1 handler
+            dgvMyTasks.CellFormatting += OnGridCellFormatting;
+            dgvReview.CellFormatting  += OnGridCellFormatting;
+            dgvTesting.CellFormatting += OnGridCellFormatting;
         }
 
         // ── Áp dụng toàn bộ style, font, màu sắc, cấu hình grid ─────────────
@@ -207,12 +212,15 @@ namespace TaskFlowManagement.WinForms.Forms
 
                 int idx = dgv.Rows.Add(
                     t.Id,
-                    t.Title,
+                    t.Title,            // hiển thị thuần, CellFormatting sẽ nối TaskCode
                     t.Project?.Name ?? "—",
                     t.Priority?.Name ?? "—",
                     t.Status?.Name ?? "—",
                     $"{t.ProgressPercent}%",
                     due);
+
+                // Gán Tag = TaskCode để handler OnGridCellFormatting lấy ra
+                dgv.Rows[idx].Tag = t.TaskCode;
 
                 UIHelper.ApplyTaskRowStyle(
                     dgv.Rows[idx],
@@ -222,9 +230,39 @@ namespace TaskFlowManagement.WinForms.Forms
             }
         }
 
+        /// <summary>
+        /// Hiển thị “Tên task #Mã-task” trong cột colTitle của cả 3 grid.
+        /// Dùng Row.Tag (đã gán trong BindGrid) nên không cần cột ẩn thứ 2.
+        /// </summary>
+        private void OnGridCellFormatting(object? sender, DataGridViewCellFormattingEventArgs e)
+        {
+            if (sender is not DataGridView dgv) return;
+            if (e.RowIndex < 0) return;
+
+            int? colTitleIndex = dgv.Columns["colTitle"]?.Index;
+            if (colTitleIndex == null || e.ColumnIndex != colTitleIndex) return;
+
+            var taskCode = dgv.Rows[e.RowIndex].Tag as string;
+            if (!string.IsNullOrWhiteSpace(taskCode) && e.Value is string title)
+            {
+                e.Value = $"{title} #{taskCode}";
+                e.FormattingApplied = true;
+            }
+        }
+
         // ── Sự kiện ───────────────────────────────────────────────────────────
         private async void btnRefresh_Click(object sender, EventArgs e)
-            => await LoadAllTabsAsync();
+        {
+            btnRefresh.Enabled = false;
+            try
+            {
+                await LoadAllTabsAsync();
+            }
+            finally
+            {
+                if (!this.IsDisposed) btnRefresh.Enabled = true;
+            }
+        }
 
         private void dgv_CellDoubleClick(object sender, DataGridViewCellEventArgs e)
         {
@@ -258,6 +296,12 @@ namespace TaskFlowManagement.WinForms.Forms
         protected override void OnFormClosed(FormClosedEventArgs e)
         {
             _taskService.TaskDataChanged -= OnTaskDataChanged;
+
+            // Unsubscribe để chống Memory Leak
+            dgvMyTasks.CellFormatting -= OnGridCellFormatting;
+            dgvReview.CellFormatting  -= OnGridCellFormatting;
+            dgvTesting.CellFormatting -= OnGridCellFormatting;
+
             base.OnFormClosed(e);
         }
     }

@@ -10,6 +10,10 @@ namespace TaskFlowManagement.Core.Entities
         [Required, MaxLength(200)]
         public string Name { get; set; } = string.Empty;
 
+        /// <summary>Mã dự án viết tắt kiểu Jira (VD: FPT, VNG). Dùng làm prefix cho TaskCode.</summary>
+        [Required, MaxLength(20)]
+        public string ProjectCode { get; set; } = string.Empty;
+
         [MaxLength(2000)]
         public string? Description { get; set; }
 

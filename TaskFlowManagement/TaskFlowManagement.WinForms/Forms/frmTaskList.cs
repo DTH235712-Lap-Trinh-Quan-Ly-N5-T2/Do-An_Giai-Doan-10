@@ -50,6 +50,7 @@ namespace TaskFlowManagement.WinForms.Forms
             ApplyClientStyles();
 
             _taskService.TaskDataChanged += OnTaskDataChanged;
+            dgvTasks.CellFormatting      += dgvTasks_CellFormatting;
         }
 
         // ── Khởi tạo giao diện ────────────────────────────────────
@@ -282,15 +283,19 @@ namespace TaskFlowManagement.WinForms.Forms
                 var due = t.DueDate.HasValue
                     ? t.DueDate.Value.ToLocalTime().ToString("dd/MM/yyyy") : "—";
 
+                // colTaskCode (cột ẩn) được thêm đầu tiên để CellFormatting lấy ra
                 int idx = dgvTasks.Rows.Add(
                     t.Id,
-                    t.Title,
+                    t.Title,            // hiển thị thuần, CellFormatting sẽ nối TaskCode
                     t.Project?.Name ?? "—",
                     t.AssignedTo?.FullName ?? "—",
                     t.Priority?.Name ?? "—",
                     t.Status?.Name ?? "—",
                     $"{t.ProgressPercent}%",
                     due);
+
+                // Gán Tag = TaskCode để CellFormatting có thể lấy ra mà không cần cột ẩn thứ 2
+                dgvTasks.Rows[idx].Tag = t.TaskCode;
 
                 UIHelper.ApplyTaskRowStyle(
                     dgvTasks.Rows[idx],
@@ -300,6 +305,23 @@ namespace TaskFlowManagement.WinForms.Forms
             }
 
             lblCount.Text = $"{items.Count} công việc";
+        }
+
+        /// <summary>
+        /// Hiển thị “Tên task #Mã-task” trong cột Title mà không thêm cột mới.
+        /// Lấy TaskCode từ Row.Tag (gán trong BindGrid).
+        /// </summary>
+        private void dgvTasks_CellFormatting(object? sender, DataGridViewCellFormattingEventArgs e)
+        {
+            if (e.RowIndex < 0 || e.ColumnIndex != dgvTasks.Columns["colTitle"]?.Index) return;
+
+            var row = dgvTasks.Rows[e.RowIndex];
+            var taskCode = row.Tag as string;
+            if (!string.IsNullOrWhiteSpace(taskCode) && e.Value is string title)
+            {
+                e.Value = $"{title} #{taskCode}";
+                e.FormattingApplied = true;
+            }
         }
 
         // ── Debounce Search ───────────────────────────────────────
@@ -378,15 +400,24 @@ namespace TaskFlowManagement.WinForms.Forms
 
         private async void btnAddNew_Click(object sender, EventArgs e)
         {
-            using var dlg = new frmTaskEdit(_taskService, _projectService, _userService, null);
-            if (dlg.ShowDialog(this) == DialogResult.OK)
-                await LoadDataAsync();
+            btnAddNew.Enabled = false;
+            try
+            {
+                using var dlg = new frmTaskEdit(_taskService, _projectService, _userService, null);
+                if (dlg.ShowDialog(this) == DialogResult.OK)
+                    await LoadDataAsync();
+            }
+            finally
+            {
+                if (!this.IsDisposed) btnAddNew.Enabled = true;
+            }
         }
 
         private async void btnEdit_Click(object sender, EventArgs e)
         {
             if (_selectedTask == null) return;
 
+            btnEdit.Enabled = false;
             this.Cursor = Cursors.WaitCursor;
             try
             {
@@ -397,6 +428,7 @@ namespace TaskFlowManagement.WinForms.Forms
             finally
             {
                 this.Cursor = Cursors.Default;
+                if (!this.IsDisposed) btnEdit.Enabled = true;
             }
         }
 
@@ -433,14 +465,25 @@ namespace TaskFlowManagement.WinForms.Forms
 
         private async void btnRefresh_Click(object sender, EventArgs e)
         {
-            _externalFilter = null;
-            _externalProjectId = null;
+            btnRefresh.Enabled = false;
+            try
+            {
+                _externalFilter = null;
+                _externalProjectId = null;
 
-            txtSearch.Clear();
-            cboStatusFilter.SelectedIndex = 0;
-            cboProjectFilter.SelectedIndex = 0;
-            _currentPage = 1;
-            await LoadDataAsync();
+                // FIX: Tải lại danh sách dự án & trạng thái TRƯỚC để cập nhật dự án mới vào ComboBox
+                await LoadLookupsAsync();
+
+                txtSearch.Clear();
+                cboStatusFilter.SelectedIndex = 0;
+                cboProjectFilter.SelectedIndex = 0;
+                _currentPage = 1;
+                await LoadDataAsync();
+            }
+            finally
+            {
+                if (!this.IsDisposed) btnRefresh.Enabled = true;
+            }
         }
 
         // ── Helpers ───────────────────────────────────────────────
@@ -453,6 +496,7 @@ namespace TaskFlowManagement.WinForms.Forms
         protected override void OnFormClosed(FormClosedEventArgs e)
         {
             _taskService.TaskDataChanged -= OnTaskDataChanged;
+            dgvTasks.CellFormatting      -= dgvTasks_CellFormatting;
             _debounceTimer.Stop();
             _debounceTimer.Dispose();
             base.OnFormClosed(e);

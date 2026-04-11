@@ -16,6 +16,7 @@ namespace TaskFlowManagement.WinForms.Forms
         // ── State ─────────────────────────────────────────────────
         private List<Project> _allProjects = new();
         private Project? _selectedProject;
+        private bool _isBindingFilter = false;
 
         [Obsolete("Chỉ dùng cho WinForms Designer")]
         public frmProjects()
@@ -62,6 +63,9 @@ namespace TaskFlowManagement.WinForms.Forms
             });
             cboFilterStatus.SelectedIndex = 0;
 
+            UIHelper.StyleFilterCombo(cboFilterCustomer);
+            cboFilterCustomer.DropDownWidth = 220;
+
             UIHelper.StyleButton(btnRefresh, UIHelper.ButtonVariant.Secondary);
 
             // Nhóm nút chức năng
@@ -104,10 +108,41 @@ namespace TaskFlowManagement.WinForms.Forms
         protected override async void OnLoad(EventArgs e)
         {
             base.OnLoad(e);
+            await LoadFilterCustomersAsync();
             await LoadProjectsAsync();
         }
 
+        protected override void OnFormClosed(FormClosedEventArgs e)
+        {
+            dgvProjects.CellFormatting -= dgvProjects_CellFormatting;
+            base.OnFormClosed(e);
+        }
+
         // ── Data Loading ──────────────────────────────────────────
+
+        private async Task LoadFilterCustomersAsync()
+        {
+            _isBindingFilter = true;
+            try
+            {
+                var customers = await _customerRepo.GetAllAsync();
+                var items = new List<ComboItem> { new ComboItem(0, "Tất cả khách hàng") };
+                items.AddRange(customers.Select(c => new ComboItem(c.Id, c.CompanyName ?? c.ContactName ?? $"KH #{c.Id}")));
+
+                cboFilterCustomer.DataSource = items;
+                cboFilterCustomer.DisplayMember = nameof(ComboItem.Label);
+                cboFilterCustomer.ValueMember = nameof(ComboItem.Id);
+            }
+            catch (Exception ex)
+            {
+                // Không chặn load nếu lỗi filter khách hàng
+                System.Diagnostics.Debug.WriteLine($"[frmProjects] LoadFilterCustomersAsync lỗi: {ex.Message}");
+            }
+            finally
+            {
+                _isBindingFilter = false;
+            }
+        }
 
         private async Task LoadProjectsAsync()
         {
@@ -144,6 +179,10 @@ namespace TaskFlowManagement.WinForms.Forms
                 ? cboFilterStatus.SelectedItem!.ToString()!
                 : string.Empty;
 
+            var customerFilter = cboFilterCustomer.SelectedItem is ComboItem ci && ci.Id > 0
+                ? ci.Id
+                : 0;
+
             var filtered = _allProjects.Where(p =>
             {
                 bool matchKeyword = string.IsNullOrEmpty(keyword)
@@ -154,7 +193,10 @@ namespace TaskFlowManagement.WinForms.Forms
                 bool matchStatus = string.IsNullOrEmpty(statusFilter)
                     || p.Status == statusFilter;
 
-                return matchKeyword && matchStatus;
+                bool matchCustomer = customerFilter == 0
+                    || p.CustomerId == customerFilter;
+
+                return matchKeyword && matchStatus && matchCustomer;
             }).ToList();
 
             BindGrid(filtered);
@@ -181,10 +223,30 @@ namespace TaskFlowManagement.WinForms.Forms
                     deadline, budget,
                     p.StartDate.ToString("dd/MM/yyyy"));
 
+                // Lưu ProjectCode vào Tag để CellFormatting dùng
+                dgvProjects.Rows[idx].Tag = p.ProjectCode ?? string.Empty;
+
                 UIHelper.ApplyProjectRowStyle(dgvProjects.Rows[idx], p.Status, p.PlannedEndDate);
             }
 
             SetStatus($"✅ Tổng: {projects.Count} dự án");
+        }
+
+        // ── CellFormatting: hiển thị [Code] Name ──────────────────
+
+        private void dgvProjects_CellFormatting(object? sender, DataGridViewCellFormattingEventArgs e)
+        {
+            if (e.RowIndex < 0) return;
+            if (dgvProjects.Columns[e.ColumnIndex].Name != "colName") return;
+
+            var row = dgvProjects.Rows[e.RowIndex];
+            var code = row.Tag as string;
+            var name = e.Value as string ?? string.Empty;
+
+            e.Value = string.IsNullOrWhiteSpace(code)
+                ? name
+                : $"[{code}] {name}";
+            e.FormattingApplied = true;
         }
 
         // ── Selection ─────────────────────────────────────────────
@@ -218,20 +280,37 @@ namespace TaskFlowManagement.WinForms.Forms
 
         private async void btnAdd_Click(object sender, EventArgs e)
         {
-            using var dlg = new frmProjectEdit(_projectService, _userService, _customerRepo, null);
-            if (dlg.ShowDialog(this) == DialogResult.OK)
-                await LoadProjectsAsync();
+            btnAdd.Enabled = false;
+            try
+            {
+                using var dlg = new frmProjectEdit(_projectService, _userService, _customerRepo, null);
+                if (dlg.ShowDialog(this) == DialogResult.OK)
+                    await LoadProjectsAsync();
+            }
+            finally
+            {
+                if (!this.IsDisposed) btnAdd.Enabled = true;
+            }
         }
 
         private async void btnEdit_Click(object sender, EventArgs e)
         {
             if (_selectedProject == null) return;
-            var detail = await _projectService.GetProjectDetailsAsync(_selectedProject.Id);
-            if (detail == null) return;
+            
+            btnEdit.Enabled = false;
+            try
+            {
+                var detail = await _projectService.GetProjectDetailsAsync(_selectedProject.Id);
+                if (detail == null) return;
 
-            using var dlg = new frmProjectEdit(_projectService, _userService, _customerRepo, detail);
-            if (dlg.ShowDialog(this) == DialogResult.OK)
-                await LoadProjectsAsync();
+                using var dlg = new frmProjectEdit(_projectService, _userService, _customerRepo, detail);
+                if (dlg.ShowDialog(this) == DialogResult.OK)
+                    await LoadProjectsAsync();
+            }
+            finally
+            {
+                if (!this.IsDisposed) btnEdit.Enabled = true;
+            }
         }
 
         private async void btnDelete_Click(object sender, EventArgs e)
@@ -256,7 +335,7 @@ namespace TaskFlowManagement.WinForms.Forms
             }
             finally
             {
-                btnDelete.Enabled = true;
+                if (!this.IsDisposed) btnDelete.Enabled = true;
             }
         }
 
@@ -366,7 +445,24 @@ namespace TaskFlowManagement.WinForms.Forms
 
         private void txtSearch_TextChanged(object sender, EventArgs e) => ApplyFilter();
         private void cboFilterStatus_SelectedIndexChanged(object sender, EventArgs e) => ApplyFilter();
-        private async void btnRefresh_Click(object sender, EventArgs e) => await LoadProjectsAsync();
+        private async void cboFilterCustomer_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (_isBindingFilter) return;
+            ApplyFilter();
+            await Task.CompletedTask; // giữ chữ ký async void để tương thích designer event
+        }
+        private async void btnRefresh_Click(object sender, EventArgs e)
+        {
+            btnRefresh.Enabled = false;
+            try
+            {
+                await LoadProjectsAsync();
+            }
+            finally
+            {
+                if (!this.IsDisposed) btnRefresh.Enabled = true;
+            }
+        }
 
         private void dgvProjects_CellDoubleClick(object sender, DataGridViewCellEventArgs e)
         {

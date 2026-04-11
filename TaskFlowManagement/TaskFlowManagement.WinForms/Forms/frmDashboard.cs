@@ -128,7 +128,12 @@ namespace TaskFlowManagement.WinForms.Forms
                 btnReport.Location = new Point(pnlHeader.Width - 212, 17);
                 btnReport.FlatAppearance.BorderSize = 1;
                 btnReport.FlatAppearance.BorderColor = UIHelper.ColorBorderLight;
-                btnReport.Click += async (s, e) => await OpenDashboardReportAsync();
+                btnReport.Click += async (s, e) =>
+                {
+                    btnReport.Enabled = false;
+                    try { await OpenDashboardReportAsync(); }
+                    finally { if (!btnReport.IsDisposed) btnReport.Enabled = true; }
+                };
                 pnlHeader.Controls.Add(btnReport);
                 btnReport.BringToFront();
             }

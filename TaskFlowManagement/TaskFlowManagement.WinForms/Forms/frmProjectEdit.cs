@@ -165,6 +165,7 @@ namespace TaskFlowManagement.WinForms.Forms
             lblTitleForm.Text = "✏️  Sửa thông tin dự án";
 
             txtName.Text = _editProject!.Name;
+            txtProjectCode.Text = _editProject.ProjectCode ?? "";
             txtDescription.Text = _editProject.Description ?? "";
             dtpStartDate.Value = _editProject.StartDate.ToDateTime(TimeOnly.MinValue);
 
@@ -233,16 +234,36 @@ namespace TaskFlowManagement.WinForms.Forms
                     ? DateOnly.FromDateTime(dtpDeadline.Value)
                     : null;
 
+                // ── Xác định ProjectCode (dùng chung cho cả Tạo mới & Cập nhật) ──
+                string projectCode;
+                if (!string.IsNullOrWhiteSpace(txtProjectCode.Text))
+                {
+                    projectCode = txtProjectCode.Text.Trim().ToUpper();
+                }
+                else
+                {
+                    // Tự sinh mã: lấy tối đa 3 chữ cái đầu của tên dự án + 3 chữ số ngẫu nhiên
+                    var prefix = new string(
+                        txtName.Text.Trim()
+                                    .ToUpper()
+                                    .Where(char.IsLetter)
+                                    .Take(3)
+                                    .ToArray());
+                    if (prefix.Length == 0) prefix = "PROJ";
+                    projectCode = prefix + Random.Shared.Next(100, 999).ToString();
+                }
+
                 if (_isEdit)
                 {
-                    _editProject!.Name = txtName.Text.Trim();
-                    _editProject.Description = NullIfEmpty(txtDescription.Text);
-                    _editProject.CustomerId = customerId;
-                    _editProject.OwnerId = ownerId;
-                    _editProject.StartDate = DateOnly.FromDateTime(dtpStartDate.Value);
+                    _editProject!.Name        = txtName.Text.Trim();
+                    _editProject.ProjectCode  = projectCode;          // ← FIX: luôn cập nhật mã
+                    _editProject.Description  = NullIfEmpty(txtDescription.Text);
+                    _editProject.CustomerId   = customerId;
+                    _editProject.OwnerId      = ownerId;
+                    _editProject.StartDate    = DateOnly.FromDateTime(dtpStartDate.Value);
                     _editProject.PlannedEndDate = deadline;
-                    _editProject.Budget = budget;
-                    _editProject.Priority = (byte)(cboPriority.SelectedIndex + 1);
+                    _editProject.Budget       = budget;
+                    _editProject.Priority     = (byte)(cboPriority.SelectedIndex + 1);
 
                     var (ok, msg) = await _projectService.UpdateProjectAsync(_editProject);
                     if (ok) { this.DialogResult = DialogResult.OK; this.Close(); }
@@ -252,15 +273,16 @@ namespace TaskFlowManagement.WinForms.Forms
                 {
                     var project = new Project
                     {
-                        Name = txtName.Text.Trim(),
-                        Description = NullIfEmpty(txtDescription.Text),
-                        CustomerId = customerId,
-                        OwnerId = ownerId,
-                        StartDate = DateOnly.FromDateTime(dtpStartDate.Value),
+                        Name         = txtName.Text.Trim(),
+                        ProjectCode  = projectCode,                    // ← FIX: lưu mã khi tạo mới
+                        Description  = NullIfEmpty(txtDescription.Text),
+                        CustomerId   = customerId,
+                        OwnerId      = ownerId,
+                        StartDate    = DateOnly.FromDateTime(dtpStartDate.Value),
                         PlannedEndDate = deadline,
-                        Budget = budget,
-                        Priority = (byte)(cboPriority.SelectedIndex + 1),
-                        Status = "NotStarted"
+                        Budget       = budget,
+                        Priority     = (byte)(cboPriority.SelectedIndex + 1),
+                        Status       = "NotStarted"
                     };
 
                     var (ok, msg) = await _projectService.CreateProjectAsync(project);

@@ -131,6 +131,9 @@ namespace TaskFlowManagement.Infrastructure.Data
             };
 
             var result = new List<TaskItem>();
+            // Bộ đếm TaskCode theo từng dự án (FPT-1, FPT-2, ...)
+            var taskCounterPerProject = new Dictionary<int, int>();
+
             foreach (var project in projects)
             {
                 var projectDevs = members
@@ -141,11 +144,12 @@ namespace TaskFlowManagement.Infrastructure.Data
 
                 var owner = users.FirstOrDefault(u => u.Id == project.OwnerId) ?? users.First();
                 var numTasks = rng.Next(10, 21);
+                taskCounterPerProject[project.Id] = 0;
 
                 for (int i = 0; i < numTasks; i++)
                 {
                     var (titleBase, catName, priName) = templates[i % templates.Length];
-                    var title = $"[{project.Id}] {titleBase} #{i + 1}";
+                    var title = titleBase;  // Giữ tên công việc thuần túy, TaskCode được lưu riêng vào trường TaskCode
                     
                     var priority = priorities.FirstOrDefault(p => p.Name == priName) ?? priorities.First();
                     var status = statuses[rng.Next(statuses.Count)];
@@ -155,9 +159,16 @@ namespace TaskFlowManagement.Infrastructure.Data
                     byte progress = status.Name == "CLOSED" || status.Name == "RESOLVED" ? (byte)100 : (status.Name == "IN-PROGRESS" ? (byte)rng.Next(10, 90) : (byte)0);
                     var isCompleted = progress == 100;
 
+                    // Sinh TaskCode: [ProjectCode]-[Số thứ tự]
+                    taskCounterPerProject[project.Id]++;
+                    var taskCode = string.IsNullOrWhiteSpace(project.ProjectCode)
+                        ? $"TASK-{project.Id}-{taskCounterPerProject[project.Id]}"
+                        : $"{project.ProjectCode}-{taskCounterPerProject[project.Id]}";
+
                     result.Add(new TaskItem
                     {
                         Title = title.Length > 200 ? title.Substring(0, 197) + "..." : title,
+                        TaskCode = taskCode,
                         Description = $"Mô tả chi tiết cho công việc {title}. Dữ liệu seed GD10.",
                         ProjectId = project.Id,
                         CreatedById = owner.Id,

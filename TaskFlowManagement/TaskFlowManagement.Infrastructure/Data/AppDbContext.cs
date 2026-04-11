@@ -163,6 +163,8 @@ namespace TaskFlowManagement.Infrastructure.Data
             modelBuilder.Entity<Project>().HasIndex(p => p.OwnerId).HasDatabaseName("IX_Projects_OwnerId");
             modelBuilder.Entity<Project>().HasIndex(p => p.Status).HasDatabaseName("IX_Projects_Status");
             modelBuilder.Entity<Project>().HasIndex(p => p.CustomerId).HasDatabaseName("IX_Projects_CustomerId");
+            modelBuilder.Entity<Project>().HasIndex(p => p.ProjectCode).IsUnique().HasDatabaseName("UQ_Projects_ProjectCode");
+            modelBuilder.Entity<TaskItem>().HasIndex(t => t.TaskCode).HasDatabaseName("IX_TaskItems_TaskCode");
             modelBuilder.Entity<Comment>().HasIndex(c => c.TaskItemId).HasDatabaseName("IX_Comments_TaskItemId");
             modelBuilder.Entity<Expense>().HasIndex(e => e.ProjectId).HasDatabaseName("IX_Expenses_ProjectId");
             modelBuilder.Entity<ProjectMember>().HasIndex(pm => pm.UserId).HasDatabaseName("IX_ProjectMembers_UserId");

@@ -222,7 +222,12 @@ namespace TaskFlowManagement.WinForms.Forms
 
             cboProject.SelectedIndexChanged += async (_, _) => { if (!_isLoadingProjects) await LoadExpensesAsync(); };
             cboExpenseType.SelectedIndexChanged += (_, _) => ApplyFilter();
-            btnRefresh.Click += async (_, _) => await LoadExpensesAsync();
+            btnRefresh.Click += async (_, _) =>
+            {
+                btnRefresh.Enabled = false;
+                try { await LoadExpensesAsync(); }
+                finally { if (!this.IsDisposed) btnRefresh.Enabled = true; }
+            };
 
             dgvExpenses.SelectionChanged += (_, _) =>
             {
@@ -233,11 +238,26 @@ namespace TaskFlowManagement.WinForms.Forms
                 UpdateButtons();
             };
 
-            btnAdd.Click += async (_, _) => await OpenEditFormAsync(null);
-            btnEdit.Click += async (_, _) => await OpenEditFormAsync(_selectedExpense);
+            btnAdd.Click += async (_, _) =>
+            {
+                btnAdd.Enabled = false;
+                try { await OpenEditFormAsync(null); }
+                finally { if (!this.IsDisposed) btnAdd.Enabled = true; }
+            };
+            btnEdit.Click += async (_, _) =>
+            {
+                btnEdit.Enabled = false;
+                try { await OpenEditFormAsync(_selectedExpense); }
+                finally { if (!this.IsDisposed) btnEdit.Enabled = true; }
+            };
             btnDelete.Click += async (_, _) => await DeleteExpenseAsync();
             btnDetail.Click += (_, _) => ShowDetail();
-            btnExportReport.Click += async (_, _) => await OpenReportAsync();
+            btnExportReport.Click += async (_, _) =>
+            {
+                btnExportReport.Enabled = false;
+                try { await OpenReportAsync(); }
+                finally { if (!this.IsDisposed) btnExportReport.Enabled = true; }
+            };
 
             dgvExpenses.CellFormatting += DgvExpenses_CellFormatting;
         }
@@ -415,7 +435,7 @@ namespace TaskFlowManagement.WinForms.Forms
             }
             finally
             {
-                btnDelete.Enabled = _selectedExpense != null;
+                if (!this.IsDisposed) btnDelete.Enabled = _selectedExpense != null;
             }
         }
 

@@ -112,15 +112,25 @@ namespace TaskFlowManagement.Infrastructure.Repositories
             await ctx.SaveChangesAsync();
         }
 
-        // Cập nhật dự án, bảo vệ CreatedAt
+        // Cập nhật dự án — ExecuteUpdateAsync chỉ SET đúng cột cần thiết, bảo vệ CreatedAt
         public async Task UpdateAsync(Project project)
         {
             using var ctx = _contextFactory.CreateDbContext();
-            project.UpdatedAt = DateTime.UtcNow;
-            ctx.Projects.Attach(project);
-            ctx.Entry(project).State = EntityState.Modified;
-            ctx.Entry(project).Property(p => p.CreatedAt).IsModified = false;
-            await ctx.SaveChangesAsync();
+            await ctx.Projects
+                .Where(p => p.Id == project.Id)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(p => p.Name, project.Name)
+                    .SetProperty(p => p.ProjectCode, project.ProjectCode)
+                    .SetProperty(p => p.Description, project.Description)
+                    .SetProperty(p => p.CustomerId, project.CustomerId)
+                    .SetProperty(p => p.OwnerId, project.OwnerId)
+                    .SetProperty(p => p.StartDate, project.StartDate)
+                    .SetProperty(p => p.PlannedEndDate, project.PlannedEndDate)
+                    .SetProperty(p => p.ActualEndDate, project.ActualEndDate)
+                    .SetProperty(p => p.Budget, project.Budget)
+                    .SetProperty(p => p.Status, project.Status)
+                    .SetProperty(p => p.Priority, project.Priority)
+                    .SetProperty(p => p.UpdatedAt, DateTime.UtcNow));
         }
 
         // Xóa dự án (cascade xóa Members, Expenses)

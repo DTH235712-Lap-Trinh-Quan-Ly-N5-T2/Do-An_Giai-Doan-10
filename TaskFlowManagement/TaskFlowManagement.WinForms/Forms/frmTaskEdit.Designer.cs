@@ -236,7 +236,18 @@ namespace TaskFlowManagement.WinForms.Forms
             txtTitle.MaxLength = 200;
             txtTitle.Name = "txtTitle";
             txtTitle.PlaceholderText = "Nhập tiêu đề công việc...";
-            txtTitle.Size = new System.Drawing.Size(480, 28);
+            txtTitle.Size = new System.Drawing.Size(380, 28);
+
+            // ── Mã Task (TaskCode) — chỉ đọc, hiển thị mờ ──────────────────────
+            lblTaskCode = new Label();
+            lblTaskCode.AutoSize = false;
+            lblTaskCode.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Italic);
+            lblTaskCode.ForeColor = UIHelper.ColorMuted;
+            lblTaskCode.Location = new System.Drawing.Point(386, 22);
+            lblTaskCode.Name = "lblTaskCode";
+            lblTaskCode.Size = new System.Drawing.Size(94, 24);
+            lblTaskCode.Text = "";
+            lblTaskCode.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
 
             // ── Dự án ─────────────────────────────────────────────────────────
             SetFieldLabel(lblProject, "DỰ ÁN *", 0, 60);
@@ -279,7 +290,7 @@ namespace TaskFlowManagement.WinForms.Forms
 
             panelLeft.Controls.AddRange(new Control[]
             {
-                lblTitle, txtTitle, lblProject, cboProject,
+                lblTitle, txtTitle, lblTaskCode, lblProject, cboProject,
                 lblAssignee, cboAssignee, lblDescription, txtDescription,
                 lblEstimated, numEstimatedHours,
             });
@@ -412,6 +423,7 @@ namespace TaskFlowManagement.WinForms.Forms
         private ListView lvwAttachments;
         private Button btnChooseFile;
         private Label lblTitle;
+        private Label lblTaskCode;
         private TextBox txtTitle;
         private Label lblDescription;
         private RichTextBox txtDescription;

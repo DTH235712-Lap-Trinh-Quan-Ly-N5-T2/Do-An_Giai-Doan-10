@@ -142,13 +142,27 @@ namespace TaskFlowManagement.Core.Services.Tasks
             task.Description = string.IsNullOrWhiteSpace(task.Description)
                 ? null : task.Description.Trim();
 
+            // ── Tự sinh TaskCode kiểu Jira: [ProjectCode]-[Số thứ tự] ──
+            var project = await _projectRepo.GetByIdAsync(task.ProjectId);
+            if (project != null)
+            {
+                // Đếm số task hiện có trong dự án, +1 để lấy số thứ tự tiếp theo
+                var allTasks = await _taskRepo.GetByProjectAsync(task.ProjectId);
+                int nextNumber = allTasks.Count + 1;
+
+                task.TaskCode = string.IsNullOrWhiteSpace(project.ProjectCode)
+                    ? $"TASK-{project.Id}-{nextNumber}"
+                    : $"{project.ProjectCode}-{nextNumber}";
+            }
+
             await _taskRepo.AddAsync(task);
             NotifyDataChanged();
-            return (true, $"Đã tạo công việc \"{task.Title}\" thành công.");
+            return (true, $"Đã tạo công việc \"{task.Title}\" thành công. Mã: {task.TaskCode}");
         }
 
         /// <summary>
         /// Cập nhật task — gọi 2 method Repository riêng biệt để tránh EF tracking conflict.
+        /// HOTFIX GĐ10: Nếu đổi Dự án → tự sinh lại TaskCode theo format Dự án mới.
         /// </summary>
         public async Task<(bool Success, string Message)> UpdateTaskAsync(TaskItem task)
         {
@@ -160,7 +174,23 @@ namespace TaskFlowManagement.Core.Services.Tasks
 
             try
             {
-                await _taskRepo.UpdateAsync(task); // ← Một lần duy nhất, đúng hoàn toàn
+                // ── HOTFIX: Kiểm tra thay đổi Dự án → sinh lại TaskCode ──
+                var oldTask = await _taskRepo.GetByIdAsync(task.Id);
+                if (oldTask != null && task.ProjectId != oldTask.ProjectId)
+                {
+                    var newProject = await _projectRepo.GetByIdAsync(task.ProjectId);
+                    if (newProject != null)
+                    {
+                        var tasksInNewProject = await _taskRepo.GetByProjectAsync(task.ProjectId);
+                        int nextNumber = tasksInNewProject.Count + 1;
+
+                        task.TaskCode = string.IsNullOrWhiteSpace(newProject.ProjectCode)
+                            ? $"TASK-{newProject.Id}-{nextNumber}"
+                            : $"{newProject.ProjectCode}-{nextNumber}";
+                    }
+                }
+
+                await _taskRepo.UpdateAsync(task);
                 NotifyDataChanged();
                 return (true, "Cập nhật công việc thành công.");
             }

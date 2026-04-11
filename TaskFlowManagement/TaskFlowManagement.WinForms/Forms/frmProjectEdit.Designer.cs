@@ -19,6 +19,8 @@ namespace TaskFlowManagement.WinForms.Forms
             tableFields = new TableLayoutPanel();
             lblName = new Label();
             txtName = new TextBox();
+            lblProjectCode = new Label();
+            txtProjectCode = new TextBox();
             lblCustomer = new Label();
             cboCustomer = new ComboBox();
             lblOwner = new Label();
@@ -112,36 +114,57 @@ namespace TaskFlowManagement.WinForms.Forms
             tableFields.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
             tableFields.Controls.Add(lblName, 0, 0);
             tableFields.Controls.Add(txtName, 0, 1);
-            tableFields.Controls.Add(lblCustomer, 0, 3);
-            tableFields.Controls.Add(cboCustomer, 0, 4);
-            tableFields.Controls.Add(lblOwner, 0, 6);
-            tableFields.Controls.Add(cboOwner, 0, 7);
-            tableFields.Controls.Add(tableDateTime, 0, 9);
-            tableFields.Controls.Add(tableBudgetPriority, 0, 11);
-            tableFields.Controls.Add(lblDesc, 0, 13);
-            tableFields.Controls.Add(txtDescription, 0, 14);
+            tableFields.Controls.Add(lblProjectCode, 0, 2);
+            tableFields.Controls.Add(txtProjectCode, 0, 3);
+            tableFields.Controls.Add(lblCustomer, 0, 5);
+            tableFields.Controls.Add(cboCustomer, 0, 6);
+            tableFields.Controls.Add(lblOwner, 0, 8);
+            tableFields.Controls.Add(cboOwner, 0, 9);
+            tableFields.Controls.Add(tableDateTime, 0, 11);
+            tableFields.Controls.Add(tableBudgetPriority, 0, 13);
+            tableFields.Controls.Add(lblDesc, 0, 15);
+            tableFields.Controls.Add(txtDescription, 0, 16);
             tableFields.Dock = DockStyle.Top;
             tableFields.GrowStyle = TableLayoutPanelGrowStyle.FixedSize;
             tableFields.Location = new Point(23, 16);
             tableFields.Margin = new Padding(3, 4, 3, 4);
             tableFields.Name = "tableFields";
-            tableFields.RowCount = 15;
+            tableFields.RowCount = 17;
+            // Row 0: lblName label (27px)
             tableFields.RowStyles.Add(new RowStyle(SizeType.Absolute, 27F));
+            // Row 1: txtName (43px)
             tableFields.RowStyles.Add(new RowStyle(SizeType.Absolute, 43F));
-            tableFields.RowStyles.Add(new RowStyle(SizeType.Absolute, 19F));
+            // Row 2: lblProjectCode label (27px) — NEW
             tableFields.RowStyles.Add(new RowStyle(SizeType.Absolute, 27F));
+            // Row 3: txtProjectCode (43px) — NEW
             tableFields.RowStyles.Add(new RowStyle(SizeType.Absolute, 43F));
+            // Row 4: spacer (19px)
             tableFields.RowStyles.Add(new RowStyle(SizeType.Absolute, 19F));
+            // Row 5: lblCustomer label (27px)
             tableFields.RowStyles.Add(new RowStyle(SizeType.Absolute, 27F));
+            // Row 6: cboCustomer (43px)
             tableFields.RowStyles.Add(new RowStyle(SizeType.Absolute, 43F));
+            // Row 7: spacer (19px)
             tableFields.RowStyles.Add(new RowStyle(SizeType.Absolute, 19F));
+            // Row 8: lblOwner label (27px)
+            tableFields.RowStyles.Add(new RowStyle(SizeType.Absolute, 27F));
+            // Row 9: cboOwner (43px)
+            tableFields.RowStyles.Add(new RowStyle(SizeType.Absolute, 43F));
+            // Row 10: spacer (19px)
+            tableFields.RowStyles.Add(new RowStyle(SizeType.Absolute, 19F));
+            // Row 11: tableDateTime (96px)
             tableFields.RowStyles.Add(new RowStyle(SizeType.Absolute, 96F));
+            // Row 12: spacer (19px)
             tableFields.RowStyles.Add(new RowStyle(SizeType.Absolute, 19F));
+            // Row 13: tableBudgetPriority (96px)
             tableFields.RowStyles.Add(new RowStyle(SizeType.Absolute, 96F));
+            // Row 14: spacer (19px)
             tableFields.RowStyles.Add(new RowStyle(SizeType.Absolute, 19F));
+            // Row 15: lblDesc label (27px)
             tableFields.RowStyles.Add(new RowStyle(SizeType.Absolute, 27F));
+            // Row 16: txtDescription (93px)
             tableFields.RowStyles.Add(new RowStyle(SizeType.Absolute, 93F));
-            tableFields.Size = new Size(503, 617);
+            tableFields.Size = new Size(503, 703);
             tableFields.TabIndex = 0;
             // 
             // lblName
@@ -163,6 +186,29 @@ namespace TaskFlowManagement.WinForms.Forms
             txtName.PlaceholderText = "Nhập tên dự án...";
             txtName.Size = new Size(497, 29);
             txtName.TabIndex = 1;
+            // 
+            // lblProjectCode
+            // 
+            lblProjectCode.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+            lblProjectCode.AutoSize = true;
+            lblProjectCode.Location = new Point(3, 77);
+            lblProjectCode.Name = "lblProjectCode";
+            lblProjectCode.Size = new Size(0, 21);
+            lblProjectCode.TabIndex = 20;
+            lblProjectCode.Text = "Mã dự án:";
+            // 
+            // txtProjectCode
+            // 
+            txtProjectCode.Anchor = AnchorStyles.Left | AnchorStyles.Right;
+            txtProjectCode.BorderStyle = BorderStyle.FixedSingle;
+            txtProjectCode.CharacterCasing = CharacterCasing.Upper;
+            txtProjectCode.Location = new Point(3, 104);
+            txtProjectCode.Margin = new Padding(3, 4, 3, 4);
+            txtProjectCode.MaxLength = 10;
+            txtProjectCode.Name = "txtProjectCode";
+            txtProjectCode.PlaceholderText = "VD: ALPHA (tự sinh nếu để trống)";
+            txtProjectCode.Size = new Size(497, 29);
+            txtProjectCode.TabIndex = 21;
             // 
             // lblCustomer
             // 
@@ -538,6 +584,8 @@ namespace TaskFlowManagement.WinForms.Forms
         private Panel panelPriority;
         private Label lblPriority;
         private ComboBox cboPriority;
+        private Label lblProjectCode;
+        private TextBox txtProjectCode;
         private Label lblDesc;
         private TextBox txtDescription;
         private Panel panelFooter;

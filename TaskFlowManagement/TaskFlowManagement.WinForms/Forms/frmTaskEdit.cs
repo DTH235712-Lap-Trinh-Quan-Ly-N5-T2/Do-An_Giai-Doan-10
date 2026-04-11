@@ -222,6 +222,18 @@ namespace TaskFlowManagement.WinForms.Forms
             numProgress.Value = _editingTask.ProgressPercent;
             numEstimatedHours.Value = (decimal)(_editingTask.EstimatedHours ?? 0);
 
+            // Hiển thị Mã Task (chỉ đọc) — người dùng thấy nhưng không sửa tay được
+            if (!string.IsNullOrWhiteSpace(_editingTask.TaskCode))
+            {
+                lblTaskCode.Text = $"#{_editingTask.TaskCode}";
+                lblTaskCode.Visible = true;
+            }
+            else
+            {
+                lblTaskCode.Text = "";
+                lblTaskCode.Visible = false;
+            }
+
             if (_editingTask.DueDate.HasValue)
             {
                 chkHasDueDate.Checked = true;
@@ -247,6 +259,8 @@ namespace TaskFlowManagement.WinForms.Forms
 
             bool isAssignee = _editingTask.AssignedToId == AppSession.UserId;
 
+            // HOTFIX: cboProject LUÔN MỞ cho Admin/Manager để cho phép đổi dự án
+            cboProject.Enabled = isManager;
             cboStatus.Enabled = isManager || isAssignee;
             cboPriority.Enabled = isManager;
             cboAssignee.Enabled = isManager || isAssignee;
@@ -261,10 +275,15 @@ namespace TaskFlowManagement.WinForms.Forms
             dtpDueDate.Enabled = false;
             dtpDueDate.Value = DateTime.Now.AddDays(7);
 
+            // Ẩn Mã Task cho chế độ Thêm mới (sẽ được tự sinh khi lưu)
+            lblTaskCode.Text = "";
+            lblTaskCode.Visible = false;
+
             bool isManagerOrAbove = AppSession.Roles.Any(r =>
                 r.Equals("Admin", StringComparison.OrdinalIgnoreCase) ||
                 r.Equals("Manager", StringComparison.OrdinalIgnoreCase));
 
+            cboProject.Enabled = true;
             cboStatus.Enabled = true;
             cboPriority.Enabled = isManagerOrAbove;
             cboAssignee.Enabled = true;

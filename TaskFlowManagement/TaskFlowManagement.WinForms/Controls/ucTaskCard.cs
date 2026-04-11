@@ -84,10 +84,15 @@ namespace TaskFlowManagement.WinForms.Controls
             _taskId          = task.Id;
             _currentStatusId = task.StatusId;
 
-            // Tiêu đề
-            lblTitle.Text = string.IsNullOrWhiteSpace(task.Title)
+            // Tiêu đề — nối #[TaskCode] nếu có (format: Tên task #Mã-task)
+            string displayTitle = string.IsNullOrWhiteSpace(task.Title)
                 ? "(Không có tiêu đề)"
                 : task.Title.Trim();
+
+            if (!string.IsNullOrWhiteSpace(task.TaskCode))
+                displayTitle = $"{displayTitle} #{task.TaskCode}";
+
+            lblTitle.Text = displayTitle;
 
             // Assignee + avatar
             string? name = task.AssignedTo?.FullName;

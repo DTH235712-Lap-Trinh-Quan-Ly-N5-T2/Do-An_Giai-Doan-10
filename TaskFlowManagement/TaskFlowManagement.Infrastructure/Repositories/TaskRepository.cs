@@ -127,6 +127,8 @@ namespace TaskFlowManagement.Infrastructure.Repositories
                 .ExecuteUpdateAsync(setters => setters
                     .SetProperty(t => t.Title, task.Title)
                     .SetProperty(t => t.Description, task.Description)
+                    .SetProperty(t => t.ProjectId, task.ProjectId)
+                    .SetProperty(t => t.TaskCode, task.TaskCode)
                     .SetProperty(t => t.StatusId, task.StatusId)
                     .SetProperty(t => t.PriorityId, task.PriorityId)
                     .SetProperty(t => t.CategoryId, task.CategoryId)

@@ -32,6 +32,7 @@ namespace TaskFlowManagement.Infrastructure.Data.Seed
             // 5 Dự án mẫu cốt lõi (Hardcoded để demo ý nghĩa)
             projects.Add(new Project {
                 Name = "Hệ thống quản lý nhân sự FPT",
+                ProjectCode = "FPT",
                 Description = "Xây dựng phần mềm quản lý nhân sự cho FPT Software",
                 OwnerId = m1.Id, CustomerId = customers[0].Id,
                 StartDate = DateOnly.FromDateTime(now.AddMonths(-3)), PlannedEndDate = DateOnly.FromDateTime(now.AddMonths(3)),
@@ -40,6 +41,7 @@ namespace TaskFlowManagement.Infrastructure.Data.Seed
             });
             projects.Add(new Project {
                 Name = "App thanh toán VNG Pay",
+                ProjectCode = "VNG",
                 Description = "Phát triển ứng dụng thanh toán di động cho VNG",
                 OwnerId = m1.Id, CustomerId = customers[1].Id,
                 StartDate = DateOnly.FromDateTime(now.AddMonths(-2)), PlannedEndDate = DateOnly.FromDateTime(now.AddMonths(4)),
@@ -50,6 +52,7 @@ namespace TaskFlowManagement.Infrastructure.Data.Seed
             // Một Dự án CỐ TÌNH tạo Tên Dài (Phá Form Stress Test)
             projects.Add(new Project {
                 Name = "Dự_Án_Demo_Nâng_Cấp_Lõi_Ngân_Hàng_Tích_Hợp_AI_Khong_Khoang_Trang", // < 100 chars
+                ProjectCode = "VNPT",
                 Description = "Dự án này cố tình có tên dài và không chứa một khoảng trắng nào để ép tất cả các thuộc tính WrapMode của DataGridView, ToolTip, Label và ComboBox phải bộc lộ điểm yếu hoặc tự động điều chỉnh.\n\nDòng 2 đoạn mô tả: Test xuống dòng.\n\nDòng 3: Đảm bảo LayoutPanel chống tràn.",
                 OwnerId = m2.Id, CustomerId = customers[2].Id,
                 StartDate = DateOnly.FromDateTime(now.AddMonths(-1)), PlannedEndDate = DateOnly.FromDateTime(now.AddMonths(5)),
@@ -57,11 +60,30 @@ namespace TaskFlowManagement.Infrastructure.Data.Seed
                 CreatedAt = now.AddMonths(-1), UpdatedAt = now
             });
 
-            // Sinh random thêm 22 Dự án để ép hiển thị Scrollbar (Tổng 25 Projects)
+            projects.Add(new Project {
+                Name = "Sàn thương mại điện tử Tiki",
+                ProjectCode = "TIKI",
+                Description = "Nâng cấp hệ thống quản lý đơn hàng cho Tiki Corporation",
+                OwnerId = m3.Id, CustomerId = customers[3].Id,
+                StartDate = DateOnly.FromDateTime(now.AddMonths(-4)), PlannedEndDate = DateOnly.FromDateTime(now.AddMonths(2)),
+                Status = "InProgress", Priority = 3, Budget = 600_000_000,
+                CreatedAt = now.AddMonths(-4), UpdatedAt = now
+            });
+            projects.Add(new Project {
+                Name = "Ví điện tử MoMo Gateway",
+                ProjectCode = "MOMO",
+                Description = "Tích hợp cổng thanh toán MoMo cho đối tác",
+                OwnerId = m2.Id, CustomerId = customers[4].Id,
+                StartDate = DateOnly.FromDateTime(now.AddMonths(-2)), PlannedEndDate = DateOnly.FromDateTime(now.AddMonths(3)),
+                Status = "InProgress", Priority = 4, Budget = 700_000_000,
+                CreatedAt = now.AddMonths(-2), UpdatedAt = now
+            });
+
+            // Sinh random thêm 20 Dự án để ép hiển thị Scrollbar (Tổng 25 Projects)
             var projectPrefixes = new[] { "Triển khai", "Tích hợp", "Nâng cấp", "Xây dựng", "Kiểm thử", "Bảo trì", "Tối ưu hóa ERP", "Chuyển đổi số" };
             var projectSuffixes = new[] { "Module Kế toán", "Hệ thống CRM", "Ứng dụng Mobile", "Cổng thông tin", "Hệ thống AI cốt lõi", "Bảo mật mạng" };
 
-            for (int i = 4; i <= 25; i++)
+            for (int i = 6; i <= 25; i++)
             {
                 var pfx = projectPrefixes[rng.Next(projectPrefixes.Length)];
                 var sfx = projectSuffixes[rng.Next(projectSuffixes.Length)];
@@ -71,6 +93,7 @@ namespace TaskFlowManagement.Infrastructure.Data.Seed
                 projects.Add(new Project
                 {
                     Name = $"{pfx} {sfx} - Giai đoạn {i}",
+                    ProjectCode = $"PRJ{i:D2}",
                     Description = $"Mô tả tự động sinh cho dự án số {i}: {pfx} {sfx} đảm bảo hiệu suất và tiến độ.\n\nTest ký tự đặc biệt: < ! @ # $ % ^ & * >",
                     OwnerId = managerIds[rng.Next(managerIds.Length)],
                     CustomerId = customers[rng.Next(customers.Count)].Id,

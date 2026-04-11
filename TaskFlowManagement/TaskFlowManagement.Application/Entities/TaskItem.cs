@@ -32,6 +32,10 @@ namespace TaskFlowManagement.Core.Entities
         [Required, MaxLength(200)]
         public string Title { get; set; } = string.Empty;
 
+        /// <summary>Mã công việc kiểu Jira: [ProjectCode]-[Số thứ tự]. VD: FPT-1, VNG-42.</summary>
+        [MaxLength(30)]
+        public string TaskCode { get; set; } = string.Empty;
+
         /// <summary>Mô tả chi tiết công việc (tùy chọn, tối đa 2000 ký tự).</summary>
         [MaxLength(2000)]
         public string? Description { get; set; }

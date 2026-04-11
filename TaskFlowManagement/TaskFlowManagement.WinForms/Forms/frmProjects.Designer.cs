@@ -20,6 +20,7 @@ namespace TaskFlowManagement.WinForms.Forms
             panelToolbar = new Panel();
             txtSearch = new TextBox();
             cboFilterStatus = new ComboBox();
+            cboFilterCustomer = new ComboBox();
             btnRefresh = new Button();
             btnAdd = new Button();
             btnEdit = new Button();
@@ -66,89 +67,113 @@ namespace TaskFlowManagement.WinForms.Forms
             panelToolbar.Name = "panelToolbar";
             panelToolbar.Controls.AddRange(new Control[]
             {
-                txtSearch, cboFilterStatus, btnRefresh,
+                txtSearch, cboFilterStatus, cboFilterCustomer, btnRefresh,
                 btnAdd, btnEdit, btnDelete,
                 btnStatus, btnMembers, btnDetail, btnKanban
             });
 
             // Search box
-            txtSearch.Location = new Point(14, 12);
+            txtSearch.Anchor = AnchorStyles.Top | AnchorStyles.Left;
+            txtSearch.Location = new Point(14, 15);
             txtSearch.Name = "txtSearch";
             txtSearch.PlaceholderText = "🔍  Tìm theo tên, khách hàng, PM...";
             txtSearch.Size = new Size(200, 28);
-            txtSearch.TextChanged += txtSearch_TextChanged;
+            txtSearch.TextChanged += new System.EventHandler(this.txtSearch_TextChanged);
 
             // ComboBox trạng thái
+            cboFilterStatus.Anchor = AnchorStyles.Top | AnchorStyles.Left;
             cboFilterStatus.DropDownStyle = ComboBoxStyle.DropDownList;
-            cboFilterStatus.Location = new Point(220, 12);
+            cboFilterStatus.Location = new Point(224, 15);
             cboFilterStatus.Name = "cboFilterStatus";
             cboFilterStatus.Size = new Size(150, 28);
-            cboFilterStatus.SelectedIndexChanged += cboFilterStatus_SelectedIndexChanged;
+            cboFilterStatus.SelectedIndexChanged += new System.EventHandler(this.cboFilterStatus_SelectedIndexChanged);
+
+            // ComboBox lọc khách hàng
+            cboFilterCustomer.Anchor = AnchorStyles.Top | AnchorStyles.Left;
+            cboFilterCustomer.DropDownStyle = ComboBoxStyle.DropDownList;
+            cboFilterCustomer.Location = new Point(384, 15);
+            cboFilterCustomer.Name = "cboFilterCustomer";
+            cboFilterCustomer.Size = new Size(170, 28);
+            cboFilterCustomer.SelectedIndexChanged += new System.EventHandler(this.cboFilterCustomer_SelectedIndexChanged);
 
             // Nút làm mới
-            btnRefresh.Location = new Point(378, 12);
+            btnRefresh.Anchor = AnchorStyles.Top | AnchorStyles.Left;
+            btnRefresh.Location = new Point(564, 15);
             btnRefresh.Name = "btnRefresh";
             btnRefresh.Size = new Size(90, 28);
             btnRefresh.Text = "🔄  Làm mới";
-            btnRefresh.Click += btnRefresh_Click;
+            btnRefresh.Click += new System.EventHandler(this.btnRefresh_Click);
 
-            // Separator: 14px gap trước nhóm action buttons
-            // btnAdd
-            btnAdd.Location = new Point(484, 9);
+            // btnAdd  (X = 564+90+10 = 664)
+            btnAdd.Anchor = AnchorStyles.Top | AnchorStyles.Left;
+            btnAdd.Location = new Point(664, 12);
             btnAdd.Name = "btnAdd";
-            btnAdd.Size = new Size(108, 34);
+            btnAdd.Size = new Size(108, 28);
             btnAdd.Text = "➕  Thêm mới";
-            btnAdd.Click += btnAdd_Click;
+            btnAdd.Click += new System.EventHandler(this.btnAdd_Click);
 
-            btnEdit.Location = new Point(598, 9);
+            // btnEdit  (X = 664+108+10 = 782)
+            btnEdit.Anchor = AnchorStyles.Top | AnchorStyles.Left;
+            btnEdit.Location = new Point(782, 12);
             btnEdit.Name = "btnEdit";
-            btnEdit.Size = new Size(80, 34);
+            btnEdit.Size = new Size(80, 28);
             btnEdit.Text = "✏️  Sửa";
             btnEdit.Enabled = false;
-            btnEdit.Click += btnEdit_Click;
+            btnEdit.Click += new System.EventHandler(this.btnEdit_Click);
 
-            btnDelete.Location = new Point(684, 9);
+            // btnDelete  (X = 782+80+10 = 872)
+            btnDelete.Anchor = AnchorStyles.Top | AnchorStyles.Left;
+            btnDelete.Location = new Point(872, 12);
             btnDelete.Name = "btnDelete";
-            btnDelete.Size = new Size(80, 34);
+            btnDelete.Size = new Size(80, 28);
             btnDelete.Text = "🗑️  Xóa";
             btnDelete.Enabled = false;
-            btnDelete.Click += btnDelete_Click;
+            btnDelete.Click += new System.EventHandler(this.btnDelete_Click);
 
-            btnStatus.Location = new Point(770, 9);
+            // btnStatus  (X = 872+80+10 = 962)
+            btnStatus.Anchor = AnchorStyles.Top | AnchorStyles.Left;
+            btnStatus.Location = new Point(962, 12);
             btnStatus.Name = "btnStatus";
-            btnStatus.Size = new Size(118, 34);
+            btnStatus.Size = new Size(118, 28);
             btnStatus.Text = "🔄  Trạng thái";
             btnStatus.Enabled = false;
-            btnStatus.Click += btnStatus_Click;
+            btnStatus.Click += new System.EventHandler(this.btnStatus_Click);
 
-            btnMembers.Location = new Point(894, 9);
+            // btnMembers  (X = 962+118+10 = 1090)
+            btnMembers.Anchor = AnchorStyles.Top | AnchorStyles.Left;
+            btnMembers.Location = new Point(1090, 12);
             btnMembers.Name = "btnMembers";
-            btnMembers.Size = new Size(118, 34);
+            btnMembers.Size = new Size(118, 28);
             btnMembers.Text = "👥  Thành viên";
             btnMembers.Enabled = false;
-            btnMembers.Click += btnMembers_Click;
+            btnMembers.Click += new System.EventHandler(this.btnMembers_Click);
 
-            btnDetail.Location = new Point(1018, 9);
+            // btnDetail  (X = 1090+118+10 = 1218)
+            btnDetail.Anchor = AnchorStyles.Top | AnchorStyles.Left;
+            btnDetail.Location = new Point(1218, 12);
             btnDetail.Name = "btnDetail";
-            btnDetail.Size = new Size(100, 34);
+            btnDetail.Size = new Size(100, 28);
             btnDetail.Text = "📋  Chi tiết";
             btnDetail.Enabled = false;
-            btnDetail.Click += btnDetail_Click;
+            btnDetail.Click += new System.EventHandler(this.btnDetail_Click);
 
-            btnKanban.Location = new Point(1124, 9);
+            // btnKanban  (X = 1218+100+10 = 1328)
+            btnKanban.Anchor = AnchorStyles.Top | AnchorStyles.Left;
+            btnKanban.Location = new Point(1328, 12);
             btnKanban.Name = "btnKanban";
-            btnKanban.Size = new Size(108, 34);
+            btnKanban.Size = new Size(108, 28);
             btnKanban.Text = "🗂  Kanban";
             btnKanban.Enabled = false;
-            btnKanban.Click += btnKanban_Click;
+            btnKanban.Click += new System.EventHandler(this.btnKanban_Click);
 
             // ── dgvProjects ───────────────────────────────────────
             dgvProjects.Dock = DockStyle.Fill;
             dgvProjects.Name = "dgvProjects";
             dgvProjects.BorderStyle = BorderStyle.None;
             dgvProjects.RowTemplate.Height = 38;
-            dgvProjects.SelectionChanged += dgvProjects_SelectionChanged;
-            dgvProjects.CellDoubleClick += dgvProjects_CellDoubleClick;
+            dgvProjects.SelectionChanged += new EventHandler(this.dgvProjects_SelectionChanged);
+            dgvProjects.CellDoubleClick += new DataGridViewCellEventHandler(this.dgvProjects_CellDoubleClick);
+            dgvProjects.CellFormatting += new DataGridViewCellFormattingEventHandler(this.dgvProjects_CellFormatting);
 
             colId.Name = "colId";
             colId.Visible = false;
@@ -228,6 +253,7 @@ namespace TaskFlowManagement.WinForms.Forms
         private Panel panelToolbar;
         private TextBox txtSearch;
         private ComboBox cboFilterStatus;
+        private ComboBox cboFilterCustomer;
         private Button btnRefresh;
         private Button btnAdd;
         private Button btnEdit;

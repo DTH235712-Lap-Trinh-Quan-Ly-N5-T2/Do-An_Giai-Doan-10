@@ -59,6 +59,15 @@ namespace TaskFlowManagement.WinForms.Forms
 
             ApplyClientStyles();
             InitializeForm();
+
+            if (_taskService != null)
+                _taskService.TaskDataChanged += OnTaskDataChanged;
+        }
+
+        private async void OnTaskDataChanged(object? sender, EventArgs e)
+        {
+            if (this.IsHandleCreated && !this.IsDisposed)
+                this.Invoke((MethodInvoker)(async () => await LoadTasksAsync()));
         }
 
         // ── Làm đẹp: toàn bộ màu sắc, font, style ────────────────────────────
@@ -410,7 +419,17 @@ namespace TaskFlowManagement.WinForms.Forms
 
         // ── Nút Làm mới ──────────────────────────────────────────────────────
         private async void btnRefresh_Click(object? sender, EventArgs e)
-            => await LoadTasksAsync();
+        {
+            btnRefresh.Enabled = false;
+            try
+            {
+                await LoadTasksAsync();
+            }
+            finally
+            {
+                if (!this.IsDisposed) btnRefresh.Enabled = true;
+            }
+        }
 
         // ── Drag-drop ─────────────────────────────────────────────────────────
         private void EnableDragDropOnAllColumns()
@@ -534,6 +553,9 @@ namespace TaskFlowManagement.WinForms.Forms
         // ── Dispose ───────────────────────────────────────────────────────────
         protected override void OnFormClosed(FormClosedEventArgs e)
         {
+            if (_taskService != null)
+                _taskService.TaskDataChanged -= OnTaskDataChanged;
+
             _toastTimer?.Stop();
             _toastTimer?.Dispose();
             base.OnFormClosed(e);
