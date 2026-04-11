@@ -4,7 +4,7 @@ using TaskFlowManagement.WinForms.Common;
 
 namespace TaskFlowManagement.WinForms.Forms
 {
-    public partial class frmUsers : Form
+    public partial class frmUsers : BaseForm
     {
         private readonly IUserService _userService;
         private List<User> _allUsers = new();
@@ -218,7 +218,18 @@ namespace TaskFlowManagement.WinForms.Forms
         private void txtSearch_TextChanged(object sender, EventArgs e) => ApplyFilter();
         private void cboFilterRole_SelectedIndexChanged(object sender, EventArgs e) => ApplyFilter();
         private void cboFilterStatus_SelectedIndexChanged(object sender, EventArgs e) => ApplyFilter();
-        private async void btnRefresh_Click(object sender, EventArgs e) => await LoadUsersAsync();
+        private async void btnRefresh_Click(object sender, EventArgs e)
+        {
+            btnRefresh.Enabled = false;
+            try
+            {
+                await LoadUsersAsync();
+            }
+            finally
+            {
+                if (!this.IsDisposed) btnRefresh.Enabled = true;
+            }
+        }
 
         // ── Tiện ích ─────────────────────────────────────────────────────────
         private void SetStatus(string msg) => lblStatus.Text = msg;

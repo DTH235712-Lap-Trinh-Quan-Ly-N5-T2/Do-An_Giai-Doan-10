@@ -115,6 +115,7 @@ namespace TaskFlowManagement.WinForms.Forms
         protected override void OnFormClosed(FormClosedEventArgs e)
         {
             dgvProjects.CellFormatting -= dgvProjects_CellFormatting;
+            _statusMenu?.Dispose();
             base.OnFormClosed(e);
         }
 
