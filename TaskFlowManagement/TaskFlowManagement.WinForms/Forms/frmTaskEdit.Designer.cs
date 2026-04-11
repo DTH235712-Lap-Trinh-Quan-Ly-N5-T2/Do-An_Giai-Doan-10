@@ -70,7 +70,7 @@ namespace TaskFlowManagement.WinForms.Forms
             // ════════════════════════════════════════════════════
             // panelHeader — Dark banner (THÊM MỚI)
             // ════════════════════════════════════════════════════
-            panelHeader.BackColor = UIHelper.ColorHeaderBg;
+            panelHeader.BackColor = System.Drawing.Color.FromArgb(31, 41, 55);
             panelHeader.Dock = DockStyle.Top;
             panelHeader.Height = 58;
             panelHeader.Name = "panelHeader";
@@ -84,8 +84,8 @@ namespace TaskFlowManagement.WinForms.Forms
 
             lblHeader.AutoSize = false;
             lblHeader.Dock = DockStyle.Fill;
-            lblHeader.Font = UIHelper.FontHeaderLarge;
-            lblHeader.ForeColor = UIHelper.ColorHeaderFg;
+            lblHeader.Font = new System.Drawing.Font("Segoe UI", 14F, System.Drawing.FontStyle.Bold);
+            lblHeader.ForeColor = System.Drawing.Color.White;
             lblHeader.Name = "lblHeader";
             lblHeader.Padding = new Padding(18, 0, 0, 4);
             lblHeader.Text = "📋  Công việc";
@@ -94,13 +94,15 @@ namespace TaskFlowManagement.WinForms.Forms
             // ════════════════════════════════════════════════════
             // panelButtons — Dock.Bottom (buttons Lưu / Hủy)
             // ════════════════════════════════════════════════════
-            panelButtons.BackColor = UIHelper.ColorSurface;
+            panelButtons.BackColor = System.Drawing.Color.White;
             panelButtons.Dock = DockStyle.Bottom;
             panelButtons.Height = 56;
             panelButtons.Name = "panelButtons";
 
             // btnSave — Primary (SỬA: hard-code Blue → UIHelper)
-            UIHelper.StyleButton(btnSave, UIHelper.ButtonVariant.Primary);
+            btnSave.BackColor = System.Drawing.Color.FromArgb(37, 99, 235);
+            btnSave.ForeColor = System.Drawing.Color.White;
+            btnSave.FlatStyle = FlatStyle.Flat;
             btnSave.Location = new System.Drawing.Point(596, 12);
             btnSave.Name = "btnSave";
             btnSave.Size = new System.Drawing.Size(110, 34);
@@ -109,12 +111,13 @@ namespace TaskFlowManagement.WinForms.Forms
             btnSave.Click += btnSave_Click;
 
             // btnCancel — Secondary (BUG FIX: trước dùng màu đỏ cho Cancel → sai UX; đỏ = nguy hiểm, không phải hủy)
-            UIHelper.StyleButton(btnCancel, UIHelper.ButtonVariant.Secondary);
+            btnCancel.BackColor = System.Drawing.Color.FromArgb(243, 244, 246);
+            btnCancel.FlatStyle = FlatStyle.Flat;
             btnCancel.Location = new System.Drawing.Point(716, 12);
             btnCancel.Name = "btnCancel";
             btnCancel.Size = new System.Drawing.Size(80, 34);
             btnCancel.Text = "✖  Hủy";
-            btnCancel.Font = UIHelper.FontBase;
+            btnCancel.Font = new System.Drawing.Font("Segoe UI", 9F);
             btnCancel.Click += btnCancel_Click;
 
             panelButtons.Controls.AddRange(new Control[] { btnSave, btnCancel });
@@ -123,7 +126,7 @@ namespace TaskFlowManagement.WinForms.Forms
             // tabControlMain — Thay thế panelContent, Dock.Fill
             // ════════════════════════════════════════════════════
             tabControlMain.Dock = DockStyle.Fill;
-            tabControlMain.Font = UIHelper.FontBase;
+            tabControlMain.Font = new System.Drawing.Font("Segoe UI", 9F);
             tabControlMain.Name = "tabControlMain";
             tabControlMain.Controls.Add(tabGeneral);
             tabControlMain.Controls.Add(tabComments);
@@ -133,14 +136,14 @@ namespace TaskFlowManagement.WinForms.Forms
             // ── tabGeneral ────────────────────────────────────────────────────
             tabGeneral.Name = "tabGeneral";
             tabGeneral.Text = "Chi tiết công việc";
-            tabGeneral.BackColor = UIHelper.ColorBackground;
+            tabGeneral.BackColor = System.Drawing.Color.FromArgb(249, 250, 251);
             tabGeneral.Controls.Add(panelLeft);
             tabGeneral.Controls.Add(panelRight);
 
             // ── tabComments ───────────────────────────────────────────────────
             tabComments.Name = "tabComments";
             tabComments.Text = "Thảo luận";
-            tabComments.BackColor = UIHelper.ColorBackground;
+            tabComments.BackColor = System.Drawing.Color.FromArgb(249, 250, 251);
             
             pnlCommentsList = new FlowLayoutPanel();
             pnlCommentsList.Dock = DockStyle.Fill;
@@ -148,7 +151,7 @@ namespace TaskFlowManagement.WinForms.Forms
             pnlCommentsList.Padding = new Padding(10);
             pnlCommentsList.FlowDirection = FlowDirection.TopDown;
             pnlCommentsList.WrapContents = false;
-            pnlCommentsList.BackColor = UIHelper.ColorBackground;
+            pnlCommentsList.BackColor = System.Drawing.Color.FromArgb(249, 250, 251);
             pnlCommentsList.Resize += pnlCommentsList_Resize;
 
             var pnlCommentInput = new Panel();
@@ -159,14 +162,14 @@ namespace TaskFlowManagement.WinForms.Forms
             txtNewComment = new TextBox();
             txtNewComment.Multiline = true;
             txtNewComment.Dock = DockStyle.Fill;
-            txtNewComment.Font = UIHelper.FontBase;
+            txtNewComment.Font = new System.Drawing.Font("Segoe UI", 9F);
             
             btnSendComment = new Button();
             btnSendComment.Dock = DockStyle.Right;
             btnSendComment.Width = 80;
             btnSendComment.Text = "Gửi";
-            btnSendComment.Font = UIHelper.FontBase;
-            UIHelper.StyleButton(btnSendComment, UIHelper.ButtonVariant.Primary);
+            btnSendComment.Font = new System.Drawing.Font("Segoe UI", 9F);
+            btnSendComment.FlatStyle = FlatStyle.Flat;
             btnSendComment.Click += btnSendComment_Click;
 
             pnlCommentInput.Controls.Add(txtNewComment);
@@ -178,7 +181,7 @@ namespace TaskFlowManagement.WinForms.Forms
             // ── tabAttachments ────────────────────────────────────────────────
             tabAttachments.Name = "tabAttachments";
             tabAttachments.Text = "Đính kèm";
-            tabAttachments.BackColor = UIHelper.ColorBackground;
+            tabAttachments.BackColor = System.Drawing.Color.FromArgb(249, 250, 251);
             
             lvwAttachments = new ListView();
             lvwAttachments.Dock = DockStyle.Fill;
@@ -189,7 +192,7 @@ namespace TaskFlowManagement.WinForms.Forms
             lvwAttachments.Columns.Add("Kích thước", 100);
             lvwAttachments.Columns.Add("Ngày tải", 150);
             lvwAttachments.Columns.Add("Người tải", 150);
-            lvwAttachments.Font = UIHelper.FontBase;
+            lvwAttachments.Font = new System.Drawing.Font("Segoe UI", 9F);
             lvwAttachments.DoubleClick += lvwAttachments_DoubleClick;
             lvwAttachments.DragEnter += lvwAttachments_DragEnter;
             lvwAttachments.DragDrop += lvwAttachments_DragDrop;
@@ -204,7 +207,8 @@ namespace TaskFlowManagement.WinForms.Forms
             btnChooseFile.Text = "Chọn file...";
             btnChooseFile.Width = 100;
             btnChooseFile.Dock = DockStyle.Left;
-            UIHelper.StyleButton(btnChooseFile, UIHelper.ButtonVariant.Secondary);
+            btnChooseFile.BackColor = System.Drawing.Color.FromArgb(243, 244, 246);
+            btnChooseFile.FlatStyle = FlatStyle.Flat;
             btnChooseFile.Click += btnChooseFile_Click;
             
             var lblAttachmentHint = new Label();
@@ -231,7 +235,7 @@ namespace TaskFlowManagement.WinForms.Forms
             SetFieldLabel(lblTitle, "TIÊU ĐỀ CÔNG VIỆC *", 0, 0);
             txtTitle.BorderStyle = BorderStyle.FixedSingle;
             txtTitle.BackColor = System.Drawing.Color.White;
-            txtTitle.Font = UIHelper.FontBase;
+            txtTitle.Font = new System.Drawing.Font("Segoe UI", 9F);
             txtTitle.Location = new System.Drawing.Point(0, 20);
             txtTitle.MaxLength = 200;
             txtTitle.Name = "txtTitle";
@@ -242,7 +246,7 @@ namespace TaskFlowManagement.WinForms.Forms
             lblTaskCode = new Label();
             lblTaskCode.AutoSize = false;
             lblTaskCode.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Italic);
-            lblTaskCode.ForeColor = UIHelper.ColorMuted;
+            lblTaskCode.ForeColor = System.Drawing.Color.Gray;
             lblTaskCode.Location = new System.Drawing.Point(386, 22);
             lblTaskCode.Name = "lblTaskCode";
             lblTaskCode.Size = new System.Drawing.Size(94, 24);
@@ -252,7 +256,7 @@ namespace TaskFlowManagement.WinForms.Forms
             // ── Dự án ─────────────────────────────────────────────────────────
             SetFieldLabel(lblProject, "DỰ ÁN *", 0, 60);
             cboProject.DropDownStyle = ComboBoxStyle.DropDownList;
-            cboProject.Font = UIHelper.FontBase;
+            cboProject.Font = new System.Drawing.Font("Segoe UI", 9F);
             cboProject.Location = new System.Drawing.Point(0, 80);
             cboProject.Name = "cboProject";
             cboProject.Size = new System.Drawing.Size(480, 28);
@@ -260,7 +264,7 @@ namespace TaskFlowManagement.WinForms.Forms
             // ── Người thực hiện ───────────────────────────────────────────────
             SetFieldLabel(lblAssignee, "NGƯỜI THỰC HIỆN", 0, 120);
             cboAssignee.DropDownStyle = ComboBoxStyle.DropDownList;
-            cboAssignee.Font = UIHelper.FontBase;
+            cboAssignee.Font = new System.Drawing.Font("Segoe UI", 9F);
             cboAssignee.Location = new System.Drawing.Point(0, 140);
             cboAssignee.Name = "cboAssignee";
             cboAssignee.Size = new System.Drawing.Size(480, 28);
@@ -269,7 +273,7 @@ namespace TaskFlowManagement.WinForms.Forms
             SetFieldLabel(lblDescription, "MÔ TẢ CHI TIẾT", 0, 180);
             txtDescription.BackColor = System.Drawing.Color.White;
             txtDescription.BorderStyle = BorderStyle.FixedSingle;
-            txtDescription.Font = UIHelper.FontBase;
+            txtDescription.Font = new System.Drawing.Font("Segoe UI", 9F);
             txtDescription.Location = new System.Drawing.Point(0, 200);
             txtDescription.Name = "txtDescription";
             txtDescription.ScrollBars = RichTextBoxScrollBars.Vertical;
@@ -280,7 +284,7 @@ namespace TaskFlowManagement.WinForms.Forms
             numEstimatedHours.BackColor = System.Drawing.Color.White;
             numEstimatedHours.BorderStyle = BorderStyle.FixedSingle;
             numEstimatedHours.DecimalPlaces = 1;
-            numEstimatedHours.Font = UIHelper.FontBase;
+            numEstimatedHours.Font = new System.Drawing.Font("Segoe UI", 9F);
             numEstimatedHours.Location = new System.Drawing.Point(0, 374);
             numEstimatedHours.Maximum = 9999;
             numEstimatedHours.Minimum = 0;
@@ -306,7 +310,7 @@ namespace TaskFlowManagement.WinForms.Forms
             // ── Mức ưu tiên ───────────────────────────────────────────────────
             SetFieldLabel(lblPriority, "MỨC ƯU TIÊN *", 0, 0);
             cboPriority.DropDownStyle = ComboBoxStyle.DropDownList;
-            cboPriority.Font = UIHelper.FontBase;
+            cboPriority.Font = new System.Drawing.Font("Segoe UI", 9F);
             cboPriority.Location = new System.Drawing.Point(0, 20);
             cboPriority.Name = "cboPriority";
             cboPriority.Size = new System.Drawing.Size(260, 28);
@@ -314,7 +318,7 @@ namespace TaskFlowManagement.WinForms.Forms
             // ── Trạng thái ────────────────────────────────────────────────────
             SetFieldLabel(lblStatus, "TRẠNG THÁI *", 0, 60);
             cboStatus.DropDownStyle = ComboBoxStyle.DropDownList;
-            cboStatus.Font = UIHelper.FontBase;
+            cboStatus.Font = new System.Drawing.Font("Segoe UI", 9F);
             cboStatus.Location = new System.Drawing.Point(0, 80);
             cboStatus.Name = "cboStatus";
             cboStatus.Size = new System.Drawing.Size(260, 28);
@@ -322,7 +326,7 @@ namespace TaskFlowManagement.WinForms.Forms
             // ── Phân loại ─────────────────────────────────────────────────────
             SetFieldLabel(lblCategory, "PHÂN LOẠI (CATEGORY)", 0, 120);
             cboCategory.DropDownStyle = ComboBoxStyle.DropDownList;
-            cboCategory.Font = UIHelper.FontBase;
+            cboCategory.Font = new System.Drawing.Font("Segoe UI", 9F);
             cboCategory.Location = new System.Drawing.Point(0, 140);
             cboCategory.Name = "cboCategory";
             cboCategory.Size = new System.Drawing.Size(260, 28);
@@ -330,7 +334,7 @@ namespace TaskFlowManagement.WinForms.Forms
             // ── Tiến độ ───────────────────────────────────────────────────────
             SetFieldLabel(lblProgress, "TIẾN ĐỘ (%)", 0, 180);
             numProgress.BackColor = System.Drawing.Color.White;
-            numProgress.Font = UIHelper.FontBase;
+            numProgress.Font = new System.Drawing.Font("Segoe UI", 9F);
             numProgress.Location = new System.Drawing.Point(0, 200);
             numProgress.Maximum = 100;
             numProgress.Minimum = 0;
@@ -339,8 +343,8 @@ namespace TaskFlowManagement.WinForms.Forms
             numProgress.Value = 0;
             numProgress.ValueChanged += numProgress_ValueChanged;
 
-            chkIsCompleted.Font = UIHelper.FontBase;
-            chkIsCompleted.ForeColor = UIHelper.ColorDark;
+            chkIsCompleted.Font = new System.Drawing.Font("Segoe UI", 9F);
+            chkIsCompleted.ForeColor = System.Drawing.Color.Black;
             chkIsCompleted.Location = new System.Drawing.Point(110, 202);
             chkIsCompleted.Name = "chkIsCompleted";
             chkIsCompleted.Size = new System.Drawing.Size(150, 24);
@@ -349,8 +353,8 @@ namespace TaskFlowManagement.WinForms.Forms
             // ── Ngày hạn chót ─────────────────────────────────────────────────
             SetFieldLabel(lblDueDate, "NGÀY HẠN CHÓT", 0, 244);
 
-            chkHasDueDate.Font = UIHelper.FontBase;
-            chkHasDueDate.ForeColor = UIHelper.ColorMuted;
+            chkHasDueDate.Font = new System.Drawing.Font("Segoe UI", 9F);
+            chkHasDueDate.ForeColor = System.Drawing.Color.Gray;
             chkHasDueDate.Location = new System.Drawing.Point(0, 266);
             chkHasDueDate.Name = "chkHasDueDate";
             chkHasDueDate.Size = new System.Drawing.Size(160, 24);
@@ -358,7 +362,7 @@ namespace TaskFlowManagement.WinForms.Forms
             chkHasDueDate.CheckedChanged += chkHasDueDate_CheckedChanged;
 
             dtpDueDate.Enabled = false;
-            dtpDueDate.Font = UIHelper.FontBase;
+            dtpDueDate.Font = new System.Drawing.Font("Segoe UI", 9F);
             dtpDueDate.Format = DateTimePickerFormat.Short;
             dtpDueDate.Location = new System.Drawing.Point(0, 294);
             dtpDueDate.Name = "dtpDueDate";
@@ -381,7 +385,7 @@ namespace TaskFlowManagement.WinForms.Forms
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.Name = "frmTaskEdit";
             this.StartPosition = FormStartPosition.CenterParent;
-            this.Font = UIHelper.FontBase;
+            this.Font = new System.Drawing.Font("Segoe UI", 9F);
 
             // Thứ tự Add: Fill → Bottom → Top
             this.Controls.Add(tabControlMain); // DockStyle.Fill

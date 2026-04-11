@@ -343,7 +343,7 @@ namespace TaskFlowManagement.WinForms.Forms
 
         private ContextMenuStrip? _statusMenu;
 
-        private async void btnStatus_Click(object sender, EventArgs e)
+        private void btnStatus_Click(object sender, EventArgs e)
         {
             if (_selectedProject == null) return;
 
@@ -371,74 +371,89 @@ namespace TaskFlowManagement.WinForms.Forms
             }
             finally
             {
-                btnStatus.Enabled = true;
+                if (!this.IsDisposed) btnStatus.Enabled = true;
             }
         }
 
-        // ── Members ───────────────────────────────────────────────
+        // ── Project Actions ───────────────────────────────────────
 
-        private async void btnMembers_Click(object sender, EventArgs e)
+        private void btnMembers_Click(object sender, EventArgs e)
         {
             if (_selectedProject == null) return;
-            using var dlg = new frmProjectMembers(_projectService, _userService, _selectedProject);
-            dlg.ShowDialog(this);
-            await LoadProjectsAsync();
-        }
-
-        // ── Kanban ────────────────────────────────────────────────
-
-        private void btnKanban_Click(object sender, EventArgs e)
-        {
-            if (_selectedProject == null)
+            
+            btnMembers.Enabled = false;
+            try
             {
-                MessageBox.Show(
-                    "Vui lòng chọn một dự án để xem Kanban Board.",
-                    "Chưa chọn dự án", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                return;
+                using var dlg = new frmProjectMembers(_projectService, _userService, _selectedProject);
+                dlg.ShowDialog(this);
             }
-
-            using var dlg = new frmKanban(_taskService, _projectService, _userService, _selectedProject.Id);
-            dlg.ShowDialog(this);
+            finally
+            {
+                if (!this.IsDisposed) btnMembers.Enabled = true;
+            }
         }
 
-        // ── Detail ────────────────────────────────────────────────
+        private async void btnKanban_Click(object sender, EventArgs e)
+        {
+            if (_selectedProject == null) return;
+
+            btnKanban.Enabled = false;
+            try
+            {
+                if (this.MdiParent is frmMain mainForm)
+                    await mainForm.OpenKanbanForProjectAsync(_selectedProject.Id);
+            }
+            finally
+            {
+                if (!this.IsDisposed) btnKanban.Enabled = true;
+            }
+        }
 
         private async void btnDetail_Click(object sender, EventArgs e)
         {
             if (_selectedProject == null) return;
-            var detail = await _projectService.GetProjectDetailsAsync(_selectedProject.Id);
-            if (detail == null)
+            
+            btnDetail.Enabled = false;
+            try
             {
-                MessageBox.Show("Không tìm thấy dự án.", "Lỗi");
-                return;
+                var detail = await _projectService.GetProjectDetailsAsync(_selectedProject.Id);
+                if (detail == null)
+                {
+                    MessageBox.Show("Không tìm thấy dự án.", "Lỗi");
+                    return;
+                }
+
+                var memberCount = detail.Members?.Count(m => m.LeftAt == null) ?? 0;
+                var taskCount = detail.Tasks?.Count ?? 0;
+                var totalExpense = detail.Expenses?.Sum(ex => ex.Amount) ?? 0;
+
+                var memberList = detail.Members?
+                    .Where(m => m.LeftAt == null)
+                    .Select(m => $"  👤 {m.User?.FullName ?? "?"} — {m.ProjectRole ?? "Developer"}")
+                    .ToList() ?? new();
+
+                var info =
+                    $"📁  {detail.Name}\n" +
+                    $"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n" +
+                    $"Khách hàng:    {detail.Customer?.CompanyName ?? "—"}\n" +
+                    $"Quản lý:       {detail.Owner?.FullName ?? "—"}\n" +
+                    $"Trạng thái:    {UIHelper.FormatProjectStatus(detail.Status)}\n" +
+                    $"Ngày bắt đầu:  {detail.StartDate:dd/MM/yyyy}\n" +
+                    $"Deadline:      {(detail.PlannedEndDate.HasValue ? detail.PlannedEndDate.Value.ToString("dd/MM/yyyy") : "—")}\n" +
+                    $"Ngân sách:     {detail.Budget:N0} ₫\n" +
+                    $"Chi phí thực:  {totalExpense:N0} ₫\n" +
+                    $"Tiến độ:       {detail.ProgressPercent}%\n\n" +
+                    $"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" +
+                    $"👥  Thành viên ({memberCount})\n" +
+                    (memberList.Count > 0 ? string.Join("\n", memberList) : "  Chưa có thành viên") +
+                    $"\n\n📋  Công việc: {taskCount} task";
+
+                MessageBox.Show(info, "Chi tiết dự án", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
-
-            var memberCount = detail.Members?.Count(m => m.LeftAt == null) ?? 0;
-            var taskCount = detail.Tasks?.Count ?? 0;
-            var totalExpense = detail.Expenses?.Sum(ex => ex.Amount) ?? 0;
-
-            var memberList = detail.Members?
-                .Where(m => m.LeftAt == null)
-                .Select(m => $"  👤 {m.User?.FullName ?? "?"} — {m.ProjectRole ?? "Developer"}")
-                .ToList() ?? new();
-
-            var info =
-                $"📁  {detail.Name}\n" +
-                $"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n" +
-                $"Khách hàng:    {detail.Customer?.CompanyName ?? "—"}\n" +
-                $"Quản lý:       {detail.Owner?.FullName ?? "—"}\n" +
-                $"Trạng thái:    {UIHelper.FormatProjectStatus(detail.Status)}\n" +
-                $"Ngày bắt đầu:  {detail.StartDate:dd/MM/yyyy}\n" +
-                $"Deadline:      {(detail.PlannedEndDate.HasValue ? detail.PlannedEndDate.Value.ToString("dd/MM/yyyy") : "—")}\n" +
-                $"Ngân sách:     {detail.Budget:N0} ₫\n" +
-                $"Chi phí thực:  {totalExpense:N0} ₫\n" +
-                $"Tiến độ:       {detail.ProgressPercent}%\n\n" +
-                $"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" +
-                $"👥  Thành viên ({memberCount})\n" +
-                (memberList.Count > 0 ? string.Join("\n", memberList) : "  Chưa có thành viên") +
-                $"\n\n📋  Công việc: {taskCount} task";
-
-            MessageBox.Show(info, "Chi tiết dự án", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            finally
+            {
+                if (!this.IsDisposed) btnDetail.Enabled = true;
+            }
         }
 
         // ── Filter & Refresh Events ───────────────────────────────

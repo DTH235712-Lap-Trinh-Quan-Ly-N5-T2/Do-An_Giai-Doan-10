@@ -85,17 +85,17 @@ namespace TaskFlowManagement.Infrastructure.Repositories
             await ctx.SaveChangesAsync();
         }
 
-        // UpdateAsync bảo vệ PasswordHash, CreatedAt, IsActive và LastLogin
+        // UpdateAsync bảo vệ PasswordHash, CreatedAt, IsActive và LastLogin bằng ExecuteUpdateAsync
         public async Task UpdateAsync(User user)
         {
             using var ctx = _contextFactory.CreateDbContext();
-            ctx.Users.Attach(user);
-            ctx.Entry(user).State = EntityState.Modified;
-            ctx.Entry(user).Property(u => u.CreatedAt).IsModified    = false;
-            ctx.Entry(user).Property(u => u.PasswordHash).IsModified = false;
-            ctx.Entry(user).Property(u => u.IsActive).IsModified     = false;
-            ctx.Entry(user).Property(u => u.LastLogin).IsModified    = false;
-            await ctx.SaveChangesAsync();
+            await ctx.Users
+                .Where(u => u.Id == user.Id)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(u => u.Username, user.Username)
+                    .SetProperty(u => u.FullName, user.FullName)
+                    .SetProperty(u => u.Email, user.Email)
+                    .SetProperty(u => u.Phone, user.Phone));
         }
 
         public async Task DeleteAsync(int id)

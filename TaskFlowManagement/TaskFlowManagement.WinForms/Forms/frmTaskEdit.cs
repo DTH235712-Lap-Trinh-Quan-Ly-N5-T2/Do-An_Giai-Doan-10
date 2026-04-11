@@ -62,6 +62,51 @@ namespace TaskFlowManagement.WinForms.Forms
             _projectService = projectService;
             _userService = userService;
             _taskId = taskId;
+
+            ApplyClientStyles();
+        }
+
+        private void ApplyClientStyles()
+        {
+            panelHeader.BackColor = UIHelper.ColorHeaderBg;
+            lblHeader.Font = UIHelper.FontHeaderLarge;
+            lblHeader.ForeColor = UIHelper.ColorHeaderFg;
+
+            panelButtons.BackColor = UIHelper.ColorSurface;
+            UIHelper.StyleButton(btnSave, UIHelper.ButtonVariant.Primary);
+            UIHelper.StyleButton(btnCancel, UIHelper.ButtonVariant.Secondary);
+
+            tabControlMain.Font = UIHelper.FontBase;
+            tabGeneral.BackColor = UIHelper.ColorBackground;
+            tabComments.BackColor = UIHelper.ColorBackground;
+            tabAttachments.BackColor = UIHelper.ColorBackground;
+
+            pnlCommentsList.BackColor = UIHelper.ColorBackground;
+            txtNewComment.Font = UIHelper.FontBase;
+            btnSendComment.Font = UIHelper.FontBase;
+            UIHelper.StyleButton(btnSendComment, UIHelper.ButtonVariant.Primary);
+
+            lvwAttachments.Font = UIHelper.FontBase;
+            UIHelper.StyleButton(btnChooseFile, UIHelper.ButtonVariant.Secondary);
+
+            txtTitle.Font = UIHelper.FontBase;
+            lblTaskCode.ForeColor = UIHelper.ColorMuted;
+            cboProject.Font = UIHelper.FontBase;
+            cboAssignee.Font = UIHelper.FontBase;
+            txtDescription.Font = UIHelper.FontBase;
+            numEstimatedHours.Font = UIHelper.FontBase;
+
+            cboPriority.Font = UIHelper.FontBase;
+            cboStatus.Font = UIHelper.FontBase;
+            cboCategory.Font = UIHelper.FontBase;
+            numProgress.Font = UIHelper.FontBase;
+            chkIsCompleted.Font = UIHelper.FontBase;
+            chkIsCompleted.ForeColor = UIHelper.ColorDark;
+            chkHasDueDate.Font = UIHelper.FontBase;
+            chkHasDueDate.ForeColor = UIHelper.ColorMuted;
+            dtpDueDate.Font = UIHelper.FontBase;
+
+            this.Font = UIHelper.FontBase;
         }
 
         // ── Form Load ─────────────────────────────────────────────────────────

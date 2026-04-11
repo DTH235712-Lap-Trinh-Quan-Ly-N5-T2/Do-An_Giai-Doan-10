@@ -360,16 +360,34 @@ namespace TaskFlowManagement.WinForms.Forms
         private async void btnPrev_Click(object sender, EventArgs e)
         {
             if (_currentPage <= 1) return;
-            _currentPage--;
-            await LoadDataAsync();
+            
+            btnPrev.Enabled = false;
+            try
+            {
+                _currentPage--;
+                await LoadDataAsync();
+            }
+            finally
+            {
+                if (!this.IsDisposed) btnPrev.Enabled = true;
+            }
         }
 
         private async void btnNext_Click(object sender, EventArgs e)
         {
             int totalPages = Math.Max(1, (int)Math.Ceiling((double)_totalCount / PAGE_SIZE));
             if (_currentPage >= totalPages) return;
-            _currentPage++;
-            await LoadDataAsync();
+            
+            btnNext.Enabled = false;
+            try
+            {
+                _currentPage++;
+                await LoadDataAsync();
+            }
+            finally
+            {
+                if (!this.IsDisposed) btnNext.Enabled = true;
+            }
         }
 
         // ── Selection ─────────────────────────────────────────────

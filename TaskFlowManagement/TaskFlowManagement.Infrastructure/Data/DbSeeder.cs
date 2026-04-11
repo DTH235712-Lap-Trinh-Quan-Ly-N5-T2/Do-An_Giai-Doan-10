@@ -149,21 +149,24 @@ namespace TaskFlowManagement.Infrastructure.Data
                 for (int i = 0; i < numTasks; i++)
                 {
                     var (titleBase, catName, priName) = templates[i % templates.Length];
-                    var title = titleBase;  // Giữ tên công việc thuần túy, TaskCode được lưu riêng vào trường TaskCode
+                    var title = titleBase; // Giữ tên công việc thuần túy, TaskCode được lưu riêng vào trường TaskCode
                     
                     var priority = priorities.FirstOrDefault(p => p.Name == priName) ?? priorities.First();
                     var status = statuses[rng.Next(statuses.Count)];
                     var category = categories.FirstOrDefault(c => c.Name == catName) ?? categories.First();
                     var assignee = projectDevs.Count > 0 ? projectDevs[rng.Next(projectDevs.Count)] : owner;
 
-                    byte progress = status.Name == "CLOSED" || status.Name == "RESOLVED" ? (byte)100 : (status.Name == "IN-PROGRESS" ? (byte)rng.Next(10, 90) : (byte)0);
-                    var isCompleted = progress == 100;
+                    // Lấy ProjectCode từ Cache hoặc Entity
+                    var projectCode = string.IsNullOrWhiteSpace(project.ProjectCode)
+                        ? "PROJ"
+                        : project.ProjectCode.ToUpper();
 
                     // Sinh TaskCode: [ProjectCode]-[Số thứ tự]
                     taskCounterPerProject[project.Id]++;
-                    var taskCode = string.IsNullOrWhiteSpace(project.ProjectCode)
-                        ? $"TASK-{project.Id}-{taskCounterPerProject[project.Id]}"
-                        : $"{project.ProjectCode}-{taskCounterPerProject[project.Id]}";
+                    var taskCode = $"{projectCode}-{taskCounterPerProject[project.Id]}";
+
+                    byte progress = status.Name == "CLOSED" || status.Name == "RESOLVED" ? (byte)100 : (status.Name == "IN-PROGRESS" ? (byte)rng.Next(10, 90) : (byte)0);
+                    var isCompleted = progress == 100;
 
                     result.Add(new TaskItem
                     {

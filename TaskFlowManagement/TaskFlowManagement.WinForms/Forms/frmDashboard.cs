@@ -141,25 +141,30 @@ namespace TaskFlowManagement.WinForms.Forms
 
         private void WireEvents()
         {
-            cboProject.SelectedIndexChanged += async (s, e) => await LoadDashboardDataAsync();
+            cboProject.SelectedIndexChanged += OnProjectChanged;
 
             pnlProgressChart.MouseMove += PnlProgressChart_MouseMove;
-            pnlProgressChart.MouseLeave += (s, e) =>
-            {
-                _hoverProgressIndex = -1;
-                pnlProgressChart.Invalidate();
-            };
+            pnlProgressChart.MouseLeave += OnChartMouseLeave;
 
-            _taskDataChangedHandler = async (s, e) =>
-            {
-                if (this.IsHandleCreated && !this.IsDisposed)
-                    this.BeginInvoke(new Action(async () => await LoadDashboardDataAsync()));
-            };
+            _taskDataChangedHandler = OnTaskDataChanged;
             _taskService.TaskDataChanged += _taskDataChangedHandler;
-            this.FormClosing += (s, e) => _taskService.TaskDataChanged -= _taskDataChangedHandler;
 
-            // Vẽ lại legend tĩnh khi panel được tạo
             pnlBudgetLegend.Paint += PnlBudgetLegend_Paint;
+        }
+
+        private async void OnProjectChanged(object? sender, EventArgs e)
+            => await LoadDashboardDataAsync();
+
+        private void OnChartMouseLeave(object? sender, EventArgs e)
+        {
+            _hoverProgressIndex = -1;
+            pnlProgressChart.Invalidate();
+        }
+
+        private async void OnTaskDataChanged(object? sender, EventArgs e)
+        {
+            if (this.IsHandleCreated && !this.IsDisposed)
+                this.BeginInvoke(new Action(async () => await LoadDashboardDataAsync()));
         }
 
         private void EnableDoubleBuffer(Control ctrl)
@@ -946,6 +951,13 @@ namespace TaskFlowManagement.WinForms.Forms
             path.AddArc(arc, 90, 90);
             path.CloseFigure();
             return path;
+        }
+        protected override void OnFormClosed(FormClosedEventArgs e)
+        {
+            if (_taskDataChangedHandler != null)
+                _taskService.TaskDataChanged -= _taskDataChangedHandler;
+
+            base.OnFormClosed(e);
         }
     }
 }

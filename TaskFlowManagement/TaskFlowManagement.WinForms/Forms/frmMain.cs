@@ -125,6 +125,18 @@ namespace TaskFlowManagement.WinForms.Forms
             }
         }
 
+        /// <summary>
+        /// Mở form Kanban của một dự án cụ thể.
+        /// Sử dụng ActivatorUtilities để resolve form kèm tham số projectId.
+        /// </summary>
+        public async Task OpenKanbanForProjectAsync(int projectId)
+        {
+            // Resolve form frmKanban từ DI container và truyền tham số projectId thủ công
+            var frm = ActivatorUtilities.CreateInstance<frmKanban>(_serviceProvider, projectId);
+            OpenMdiChild(frm);
+            await Task.CompletedTask;
+        }
+
         // ── Menu: Hệ thống ────────────────────────────────────
         private void menuHome_Click(object sender, EventArgs e) => OpenHome();
 
