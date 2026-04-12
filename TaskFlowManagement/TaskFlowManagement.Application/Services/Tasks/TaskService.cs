@@ -32,33 +32,26 @@ namespace TaskFlowManagement.Core.Services.Tasks
         private readonly IProjectRepository _projectRepo;
         private readonly ICommentRepository _commentRepo;
         private readonly IAttachmentRepository _attachmentRepo;
-        private readonly ITaskEventBus _taskEventBus;
 
-        public event EventHandler? TaskDataChanged
-        {
-            add => _taskEventBus.TaskDataChanged += value;
-            remove => _taskEventBus.TaskDataChanged -= value;
-        }
+        public event EventHandler? TaskDataChanged;
 
         public TaskService(
             ITaskRepository taskRepo, 
             IUserRepository userRepo,
             IProjectRepository projectRepo,
             ICommentRepository commentRepo,
-            IAttachmentRepository attachmentRepo,
-            ITaskEventBus taskEventBus)
+            IAttachmentRepository attachmentRepo)
         {
             _taskRepo = taskRepo ?? throw new ArgumentNullException(nameof(taskRepo));
             _userRepo = userRepo ?? throw new ArgumentNullException(nameof(userRepo));
             _projectRepo = projectRepo ?? throw new ArgumentNullException(nameof(projectRepo));
             _commentRepo = commentRepo ?? throw new ArgumentNullException(nameof(commentRepo));
             _attachmentRepo = attachmentRepo ?? throw new ArgumentNullException(nameof(attachmentRepo));
-            _taskEventBus = taskEventBus ?? throw new ArgumentNullException(nameof(taskEventBus));
         }
 
         public void NotifyDataChanged()
         {
-            _taskEventBus.NotifyDataChanged();
+            TaskDataChanged?.Invoke(this, EventArgs.Empty);
         }
 
         // ══════════════════════════════════════════════════════
@@ -154,8 +147,8 @@ namespace TaskFlowManagement.Core.Services.Tasks
             if (project != null)
             {
                 // Đếm số task hiện có trong dự án, +1 để lấy số thứ tự tiếp theo
-                int maxNumber = await _taskRepo.GetMaxTaskNumberByProjectAsync(task.ProjectId);
-                int nextNumber = maxNumber + 1;
+                var allTasks = await _taskRepo.GetByProjectAsync(task.ProjectId);
+                int nextNumber = allTasks.Count + 1;
 
                 task.TaskCode = string.IsNullOrWhiteSpace(project.ProjectCode)
                     ? $"TASK-{project.Id}-{nextNumber}"

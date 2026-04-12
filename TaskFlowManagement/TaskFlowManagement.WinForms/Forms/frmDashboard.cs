@@ -18,7 +18,6 @@ namespace TaskFlowManagement.WinForms.Forms
 
         private int _hoverProgressIndex = -1;
         private EventHandler? _taskDataChangedHandler;
-        private readonly Font _emojiFont = new Font("Segoe UI Emoji", 22F);
 
         [Obsolete("Chỉ dùng cho WinForms Designer")]
         public frmDashboard()
@@ -162,17 +161,10 @@ namespace TaskFlowManagement.WinForms.Forms
             pnlProgressChart.Invalidate();
         }
 
-        private void OnTaskDataChanged(object? sender, EventArgs e)
+        private async void OnTaskDataChanged(object? sender, EventArgs e)
         {
             if (this.IsHandleCreated && !this.IsDisposed)
-            {
-                this.BeginInvoke(new Action(async () =>
-                {
-                    if (this.IsDisposed) return;
-                    try { await LoadDashboardDataAsync(); }
-                    catch { /* log or ignore */ }
-                }));
-            }
+                this.BeginInvoke(new Action(async () => await LoadDashboardDataAsync()));
         }
 
         private void EnableDoubleBuffer(Control ctrl)
@@ -253,9 +245,9 @@ namespace TaskFlowManagement.WinForms.Forms
                 AppSession.UserId, AppSession.IsManager);
 
             cboProject.Items.Clear();
-            cboProject.Items.Add(new ComboItem(0, "-- Toàn bộ hệ thống --"));
+            cboProject.Items.Add(new { Id = 0, Name = "-- Toàn bộ hệ thống --" });
             foreach (var p in projects)
-                cboProject.Items.Add(new ComboItem(p.Id, p.Name));
+                cboProject.Items.Add(new { Id = p.Id, Name = p.Name });
 
             cboProject.DisplayMember = "Name";
             cboProject.ValueMember = "Id";
@@ -270,7 +262,7 @@ namespace TaskFlowManagement.WinForms.Forms
         {
             if (cboProject.SelectedItem == null) return;
 
-            var selectedId = ((ComboItem)cboProject.SelectedItem).Id;
+            var selectedId = (int)((dynamic)cboProject.SelectedItem).Id;
             int? projectId = selectedId == 0 ? null : selectedId;
 
             try
@@ -323,7 +315,6 @@ namespace TaskFlowManagement.WinForms.Forms
             {
                 var existing = pnlCardsLayout.GetControlFromPosition(col, 0);
                 if (existing == null) continue;
-                existing.Paint -= PnlStatCard_Paint;
                 pnlCardsLayout.Controls.Remove(existing);
                 existing.Dispose();
             }
@@ -387,7 +378,7 @@ namespace TaskFlowManagement.WinForms.Forms
             int? projectId = null;
             if (cboProject.SelectedItem != null)
             {
-                var selId = ((ComboItem)cboProject.SelectedItem).Id;
+                var selId = (int)((dynamic)cboProject.SelectedItem).Id;
                 if (selId > 0) projectId = selId;
             }
 
@@ -466,7 +457,7 @@ namespace TaskFlowManagement.WinForms.Forms
             {
                 Text = icon,
                 ForeColor = accentColor,
-                Font = _emojiFont,
+                Font = new Font("Segoe UI Emoji", 22F),
                 AutoSize = false,
                 Dock = DockStyle.Fill,
                 TextAlign = ContentAlignment.MiddleCenter
@@ -478,19 +469,16 @@ namespace TaskFlowManagement.WinForms.Forms
             pnlOuter.Controls.Add(tbl);
 
             // Viền bo góc mờ nhẹ thay thế BorderStyle cứng
-            pnlOuter.Paint += PnlStatCard_Paint;
+            pnlOuter.Paint += (s, pe) =>
+            {
+                pe.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                var rect = new Rectangle(0, 0, pnlOuter.Width - 1, pnlOuter.Height - 1);
+                using var path = GetRoundedRect(rect, 10);
+                using var pen = new Pen(UIHelper.ColorBorderLight);
+                pe.Graphics.DrawPath(pen, path);
+            };
 
             return pnlOuter;
-        }
-
-        private void PnlStatCard_Paint(object? sender, PaintEventArgs pe)
-        {
-            if (sender is not Panel pnl) return;
-            pe.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-            var rect = new Rectangle(0, 0, pnl.Width - 1, pnl.Height - 1);
-            using var path = GetRoundedRect(rect, 10);
-            using var pen = new Pen(UIHelper.ColorBorderLight);
-            pe.Graphics.DrawPath(pen, path);
         }
 
         // ══════════════════════════════════════════════════════════════════
@@ -894,11 +882,12 @@ namespace TaskFlowManagement.WinForms.Forms
             try
             {
                 this.Cursor = Cursors.WaitCursor;
+                Application.DoEvents();
 
                 int? selectedProjectId = null;
                 if (cboProject.SelectedItem != null)
                 {
-                    var selId = ((ComboItem)cboProject.SelectedItem).Id;
+                    var selId = (int)((dynamic)cboProject.SelectedItem).Id;
                     if (selId > 0) selectedProjectId = selId;
                 }
 
@@ -968,7 +957,6 @@ namespace TaskFlowManagement.WinForms.Forms
             if (_taskDataChangedHandler != null)
                 _taskService.TaskDataChanged -= _taskDataChangedHandler;
 
-            _emojiFont.Dispose();
             base.OnFormClosed(e);
         }
     }

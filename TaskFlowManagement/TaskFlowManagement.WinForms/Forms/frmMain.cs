@@ -88,30 +88,21 @@ namespace TaskFlowManagement.WinForms.Forms
             { _clockTimer.Stop(); _clockTimer.Dispose(); _clockTimer = null; }
         }
 
-        // Mở MDI child, cấp phát scope riêng biệt cho form đó (Khắc phục Captive Dependency Lỗi 14)
-        public T OpenMdiChild<T>(params object[] args) where T : Form
+        // Mở MDI child, kiểm tra tránh mở trùng form cùng type
+        public void OpenMdiChild(Form child)
         {
             foreach (Form existing in this.MdiChildren)
             {
-                if (existing.GetType() == typeof(T))
+                if (existing.GetType() == child.GetType())
                 { 
                     existing.Activate(); 
-                    return (T)existing; 
+                    child.Dispose(); 
+                    return; 
                 }
             }
-            
-            var scope = _serviceProvider.CreateScope();
-            T child;
-            if (args != null && args.Length > 0)
-                child = ActivatorUtilities.CreateInstance<T>(scope.ServiceProvider, args);
-            else
-                child = scope.ServiceProvider.GetRequiredService<T>();
-                
-            child.FormClosed += (s, e) => scope.Dispose();
-            child.MdiParent = this;
+            child.MdiParent   = this;
             child.WindowState = FormWindowState.Maximized;
             child.Show();
-            return child;
         }
 
         /// <summary>
@@ -119,17 +110,30 @@ namespace TaskFlowManagement.WinForms.Forms
         /// </summary>
         public void OpenTaskListWithFilter(string filterType, int? projectId)
         {
-            var frm = OpenMdiChild<frmTaskList>();
-            _ = frm.ApplyExternalFilter(filterType, projectId);
+            // Kiểm tra xem Form đã mở chưa
+            var existing = this.MdiChildren.OfType<frmTaskList>().FirstOrDefault();
+            if (existing != null)
+            {
+                existing.Activate();
+                _ = existing.ApplyExternalFilter(filterType, projectId);
+            }
+            else
+            {
+                var frm = _serviceProvider.GetRequiredService<frmTaskList>();
+                OpenMdiChild(frm);
+                _ = frm.ApplyExternalFilter(filterType, projectId);
+            }
         }
 
         /// <summary>
         /// Mở form Kanban của một dự án cụ thể.
-        /// Sử dụng ActivatorUtilities nội bộ trong OpenMdiChild để resolve form kèm tham số projectId.
+        /// Sử dụng ActivatorUtilities để resolve form kèm tham số projectId.
         /// </summary>
         public async Task OpenKanbanForProjectAsync(int projectId)
         {
-            OpenMdiChild<frmKanban>(projectId);
+            // Resolve form frmKanban từ DI container và truyền tham số projectId thủ công
+            var frm = ActivatorUtilities.CreateInstance<frmKanban>(_serviceProvider, projectId);
+            OpenMdiChild(frm);
             await Task.CompletedTask;
         }
 
@@ -138,8 +142,8 @@ namespace TaskFlowManagement.WinForms.Forms
 
         private void menuChangePassword_Click(object sender, EventArgs e)
         {
-            using var scope = _serviceProvider.CreateScope();
-            using var frm = scope.ServiceProvider.GetRequiredService<frmChangePassword>();
+            // FIX BUG #5: Bọc using để Dispose form ngay sau khi đóng, tránh memory leak
+            using var frm = _serviceProvider.GetRequiredService<frmChangePassword>();
             frm.ShowDialog(this);
         }
 
@@ -154,8 +158,7 @@ namespace TaskFlowManagement.WinForms.Forms
             this.Hide();
 
             // FIX BUG #6: Bọc using để Dispose frmLogin sau mỗi lần logout
-            using var scope = _serviceProvider.CreateScope();
-            using var loginForm = scope.ServiceProvider.GetRequiredService<frmLogin>();
+            using var loginForm = _serviceProvider.GetRequiredService<frmLogin>();
             if (loginForm.ShowDialog() == DialogResult.OK)
             {
                 UpdateUserInfo();
@@ -171,21 +174,21 @@ namespace TaskFlowManagement.WinForms.Forms
 
         // ── Menu: Người dùng ──────────────────────────────────
         private void menuUserAccounts_Click(object sender, EventArgs e)
-            => OpenMdiChild<frmUsers>();
+            => OpenMdiChild(_serviceProvider.GetRequiredService<frmUsers>());
 
         private void menuEmployees_Click(object sender, EventArgs e)
-            => OpenMdiChild<frmUsers>();
+            => OpenMdiChild(_serviceProvider.GetRequiredService<frmUsers>());
 
         // ── Menu: Khách hàng ──────────────────────────────────
         private void menuCustomerList_Click(object sender, EventArgs e)
-            => OpenMdiChild<frmCustomers>();
+            => OpenMdiChild(_serviceProvider.GetRequiredService<frmCustomers>());
 
         // ── Menu: Dự án (GD3) ─────────────────────────────────
         private void menuProjectList_Click(object sender, EventArgs e)
-            => OpenMdiChild<frmProjects>();
+            => OpenMdiChild(_serviceProvider.GetRequiredService<frmProjects>());
 
         private void menuProjectNew_Click(object sender, EventArgs e)
-            => OpenMdiChild<frmProjects>();
+            => OpenMdiChild(_serviceProvider.GetRequiredService<frmProjects>());
 
         // ── Menu: Công việc (GD4) ─────────────────────────────
 
@@ -195,7 +198,7 @@ namespace TaskFlowManagement.WinForms.Forms
         /// Developer: chỉ thấy task được giao, không có nút CRUD.
         /// </summary>
         private void menuTaskList_Click(object sender, EventArgs e)
-            => OpenMdiChild<frmTaskList>();
+            => OpenMdiChild(_serviceProvider.GetRequiredService<frmTaskList>());
 
         private void menuKanban_Click(object sender, EventArgs e)
         {
@@ -205,7 +208,7 @@ namespace TaskFlowManagement.WinForms.Forms
                             MessageBoxIcon.Information);
 
             // Tự động chuyển hướng mở form Danh sách Dự án luôn cho tiện
-            OpenMdiChild<frmProjects>();
+            OpenMdiChild(_serviceProvider.GetRequiredService<frmProjects>());
         }
 
         /// <summary>
@@ -213,17 +216,30 @@ namespace TaskFlowManagement.WinForms.Forms
         /// Hiển thị task được giao / cần review / cần test của user đang đăng nhập.
         /// </summary>
         private void menuMyTasks_Click(object sender, EventArgs e)
-            => OpenMdiChild<frmMyTasks>();
+            => OpenMdiChild(_serviceProvider.GetRequiredService<frmMyTasks>());
 
         // ── Menu: Chi phí (Giai đoạn 8) ───────────────────────
         private void menuExpenseList_Click(object sender, EventArgs e)
-            => OpenMdiChild<frmExpenses>();
+            => OpenMdiChild(_serviceProvider.GetRequiredService<frmExpenses>());
 
         // ── Menu: Báo cáo (Giai đoạn 6) ───────────────────────
         private void OpenDashboardTab(int index)
         {
-            var frm = OpenMdiChild<frmDashboard>();
-            frm.SelectTab(index);
+            var existing = this.MdiChildren.OfType<frmDashboard>().FirstOrDefault();
+            if (existing != null)
+            {
+                existing.Activate();
+                existing.SelectTab(index);
+            }
+            else
+            {
+                var frm = _serviceProvider.GetRequiredService<frmDashboard>();
+                frm.MdiParent = this;
+                frm.WindowState = FormWindowState.Maximized;
+                frm.Show();
+                // Phải show rồi mới SelectTab được vì TabControl cần tạo handle trước
+                frm.SelectTab(index); 
+            }
         }
 
         private void menuDashboard_Click(object sender, EventArgs e)

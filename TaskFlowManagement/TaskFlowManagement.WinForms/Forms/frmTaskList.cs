@@ -126,17 +126,10 @@ namespace TaskFlowManagement.WinForms.Forms
             await LoadDataAsync();
         }
 
-        private void OnTaskDataChanged(object? sender, EventArgs e)
+        private async void OnTaskDataChanged(object? sender, EventArgs e)
         {
             if (this.IsHandleCreated && !this.IsDisposed)
-            {
-                this.BeginInvoke(new Action(async () =>
-                {
-                    if (this.IsDisposed) return;
-                    try { await LoadDataAsync(); }
-                    catch { /* Handle */ }
-                }));
-            }
+                this.Invoke((MethodInvoker)(async () => await LoadDataAsync()));
         }
 
         // ── Form Load ─────────────────────────────────────────────
