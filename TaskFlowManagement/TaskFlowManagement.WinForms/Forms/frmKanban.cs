@@ -207,7 +207,17 @@ namespace TaskFlowManagement.WinForms.Forms
             base.OnLoad(e);
             if (_taskService == null || DesignMode) return;
 
-            var title = $"🗂️  Kanban Board — Dự án #{_projectId}";
+            string projectName = $"Dự án #{_projectId}";
+            if (_projectService != null)
+            {
+                var project = await _projectService.GetProjectDetailsAsync(_projectId);
+                if (project != null)
+                {
+                    projectName = project.Name;
+                }
+            }
+
+            var title = $"🗂️  Kanban Board — {projectName}";
             this.Text = title;
             lblHeader.Text = title;
 
