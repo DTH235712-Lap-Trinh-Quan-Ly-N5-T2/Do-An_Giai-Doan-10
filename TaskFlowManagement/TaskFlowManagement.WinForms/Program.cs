@@ -8,6 +8,7 @@ using TaskFlowManagement.Core.Services.Users;
 using TaskFlowManagement.Core.Services.Projects;
 using TaskFlowManagement.Core.Services.Expenses;
 using TaskFlowManagement.Core.Services.Tasks;
+using TaskFlowManagement.Core.Services.Customers;
 using TaskFlowManagement.Infrastructure.Data;
 using TaskFlowManagement.Infrastructure.Repositories;
 using TaskFlowManagement.WinForms.Forms;
@@ -19,7 +20,7 @@ namespace TaskFlowManagement.WinForms
     /// </summary>
     internal static class Program
     {
-        public static IServiceProvider ServiceProvider { get; private set; } = null!;
+        internal static IServiceProvider ServiceProvider { get; private set; } = null!;
 
         [STAThread]
         static void Main()
@@ -86,6 +87,8 @@ namespace TaskFlowManagement.WinForms
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<IProjectService, ProjectService>();
             services.AddScoped<ITaskService, TaskService>();
+            services.AddScoped<ICustomerService, CustomerService>();
+            services.AddSingleton<ITaskEventBus, TaskEventBus>();
             services.AddScoped<IExpenseService, ExpenseService>();
 
             // 5. Forms

@@ -1,12 +1,13 @@
 using TaskFlowManagement.Core.Entities;
 using TaskFlowManagement.Core.Interfaces;
+using TaskFlowManagement.Core.Interfaces.Services;
 using TaskFlowManagement.WinForms.Common;
 
 namespace TaskFlowManagement.WinForms.Forms
 {
     public partial class frmCustomerEdit : BaseForm
     {
-        private readonly ICustomerRepository _customerRepo;
+        private readonly ICustomerService _customerService;
         private readonly Customer? _editCustomer;
         private readonly bool _isEdit;
 
@@ -17,9 +18,9 @@ namespace TaskFlowManagement.WinForms.Forms
             InitializeComponent();
         }
 
-        public frmCustomerEdit(ICustomerRepository customerRepo, Customer? editCustomer)
+        public frmCustomerEdit(ICustomerService customerService, Customer? editCustomer)
         {
-            _customerRepo = customerRepo;
+            _customerService = customerService;
             _editCustomer = editCustomer;
             _isEdit = editCustomer != null;
 
@@ -115,7 +116,9 @@ namespace TaskFlowManagement.WinForms.Forms
                     _editCustomer.Email = NullIfEmpty(emailInput);
                     _editCustomer.Phone = NullIfEmpty(txtPhone.Text);
                     _editCustomer.Address = NullIfEmpty(txtAddress.Text);
-                    await _customerRepo.UpdateAsync(_editCustomer);
+                    
+                    var (ok, msg) = await _customerService.UpdateAsync(_editCustomer);
+                    if (!ok) { lblError.Text = "⚠  " + msg; return; }
                 }
                 else
                 {
@@ -127,7 +130,9 @@ namespace TaskFlowManagement.WinForms.Forms
                         Phone = NullIfEmpty(txtPhone.Text),
                         Address = NullIfEmpty(txtAddress.Text),
                     };
-                    await _customerRepo.AddAsync(newCustomer);
+                    
+                    var (ok, msg, _) = await _customerService.CreateAsync(newCustomer);
+                    if (!ok) { lblError.Text = "⚠  " + msg; return; }
                 }
 
                 this.DialogResult = DialogResult.OK;

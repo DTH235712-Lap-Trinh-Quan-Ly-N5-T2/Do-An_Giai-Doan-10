@@ -11,7 +11,7 @@ namespace TaskFlowManagement.WinForms.Forms
         private readonly IProjectService _projectService;
         private readonly IUserService _userService;
         private readonly ITaskService _taskService;
-        private readonly ICustomerRepository _customerRepo;
+        private readonly ICustomerService _customerService;
 
         // ── State ─────────────────────────────────────────────────
         private List<Project> _allProjects = new();
@@ -28,12 +28,12 @@ namespace TaskFlowManagement.WinForms.Forms
             IProjectService projectService,
             IUserService userService,
             ITaskService taskService,
-            ICustomerRepository customerRepo)
+            ICustomerService customerService)
         {
             _projectService = projectService;
             _userService = userService;
             _taskService = taskService;
-            _customerRepo = customerRepo;
+            _customerService = customerService;
 
             InitializeComponent();
             ApplyClientStyles();
@@ -126,7 +126,7 @@ namespace TaskFlowManagement.WinForms.Forms
             _isBindingFilter = true;
             try
             {
-                var customers = await _customerRepo.GetAllAsync();
+                var customers = await _customerService.GetAllAsync();
                 var items = new List<ComboItem> { new ComboItem(0, "Tất cả khách hàng") };
                 items.AddRange(customers.Select(c => new ComboItem(c.Id, c.CompanyName ?? c.ContactName ?? $"KH #{c.Id}")));
 
@@ -284,7 +284,7 @@ namespace TaskFlowManagement.WinForms.Forms
             btnAdd.Enabled = false;
             try
             {
-                using var dlg = new frmProjectEdit(_projectService, _userService, _customerRepo, null);
+                using var dlg = new frmProjectEdit(_projectService, _userService, _customerService, _taskService, null);
                 if (dlg.ShowDialog(this) == DialogResult.OK)
                     await LoadProjectsAsync();
             }
@@ -304,7 +304,7 @@ namespace TaskFlowManagement.WinForms.Forms
                 var detail = await _projectService.GetProjectDetailsAsync(_selectedProject.Id);
                 if (detail == null) return;
 
-                using var dlg = new frmProjectEdit(_projectService, _userService, _customerRepo, detail);
+                using var dlg = new frmProjectEdit(_projectService, _userService, _customerService, _taskService, detail);
                 if (dlg.ShowDialog(this) == DialogResult.OK)
                     await LoadProjectsAsync();
             }

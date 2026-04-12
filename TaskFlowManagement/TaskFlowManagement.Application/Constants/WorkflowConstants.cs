@@ -1,7 +1,12 @@
-﻿namespace TaskFlowManagement.Core.Constants
+namespace TaskFlowManagement.Core.Constants
 {
     public static class WorkflowConstants
     {
+        public const int StatusIdClosed = 10;
+        public const string StatusNameReview1 = "REVIEW-1";
+        public const string StatusNameReview2 = "REVIEW-2";
+        public const string StatusNameInTest  = "IN-TEST";
+
         public static string GetStatusName(int id) => id switch
         {
             1 => "CREATED",

@@ -636,28 +636,40 @@ namespace TaskFlowManagement.WinForms.Forms
             if (string.IsNullOrEmpty(content)) return;
 
             btnSendComment.Enabled = false;
-            var (ok, msg, newComment) = await _taskService.AddCommentAsync(_taskId.Value, content, AppSession.UserId, AppSession.Roles);
-            
-            if (ok && newComment != null)
+            try
             {
-                txtNewComment.Clear();
-
-                // Xóa Empty-State label nếu có
-                if (pnlCommentsList.Controls.Count == 1
-                    && pnlCommentsList.Controls[0] is Label emptyLbl
-                    && emptyLbl.Tag is string tag && tag == "empty")
+                var (ok, msg, newComment) = await _taskService.AddCommentAsync(_taskId.Value, content, AppSession.UserId, AppSession.Roles);
+                
+                if (ok && newComment != null)
                 {
-                    pnlCommentsList.Controls.Clear();
-                }
+                    txtNewComment.Clear();
 
-                AddCommentToUI(newComment);
-                ScrollToBottom();
+                    // Xóa Empty-State label nếu có
+                    if (pnlCommentsList.Controls.Count == 1
+                        && pnlCommentsList.Controls[0] is Label emptyLbl
+                        && emptyLbl.Tag is string tag && tag == "empty")
+                    {
+                        pnlCommentsList.Controls.Clear();
+                    }
+
+                    AddCommentToUI(newComment);
+                    ScrollToBottom();
+                }
+                else
+                {
+                    MessageBox.Show(msg, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
             }
-            else
+            catch (Exception ex)
             {
-                MessageBox.Show(msg, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"Lỗi không mong đợi: {ex.Message}", "Lỗi hệ thống",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
-            btnSendComment.Enabled = true;
+            finally
+            {
+                if (!btnSendComment.IsDisposed)
+                    btnSendComment.Enabled = true;
+            }
         }
 
         private async Task LoadAttachmentsAsync()

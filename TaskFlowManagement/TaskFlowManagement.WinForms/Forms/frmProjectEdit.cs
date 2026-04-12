@@ -11,7 +11,8 @@ namespace TaskFlowManagement.WinForms.Forms
         // ── Dependencies ──────────────────────────────────────────
         private readonly IProjectService _projectService;
         private readonly IUserService _userService;
-        private readonly ICustomerRepository _customerRepo;
+        private readonly ICustomerService _customerService;
+        private readonly ITaskService _taskService;
         private readonly Project? _editProject;
         private readonly bool _isEdit;
 
@@ -28,12 +29,14 @@ namespace TaskFlowManagement.WinForms.Forms
         public frmProjectEdit(
             IProjectService projectService,
             IUserService userService,
-            ICustomerRepository customerRepo,
+            ICustomerService customerService,
+            ITaskService taskService,
             Project? editProject)
         {
             _projectService = projectService;
             _userService = userService;
-            _customerRepo = customerRepo;
+            _customerService = customerService;
+            _taskService = taskService;
             _editProject = editProject;
             _isEdit = editProject != null;
 
@@ -135,7 +138,7 @@ namespace TaskFlowManagement.WinForms.Forms
                 cboOwner.DataSource = null; cboOwner.Items.Clear();
                 cboPriority.DataSource = null; cboPriority.Items.Clear();
 
-                _customers = await _customerRepo.GetAllAsync();
+                _customers = await _customerService.GetAllAsync();
                 cboCustomer.Items.Add("— Không chọn —");
                 foreach (var c in _customers)
                     cboCustomer.Items.Add(c.CompanyName);
@@ -275,9 +278,7 @@ namespace TaskFlowManagement.WinForms.Forms
                         // ── Cascading Update: đồng bộ TaskCode nếu ProjectCode thay đổi ──
                         if (!string.Equals(oldProjectCode, projectCode, StringComparison.OrdinalIgnoreCase))
                         {
-                            var taskSvc = Program.ServiceProvider
-                                .GetRequiredService<ITaskService>();
-                            await taskSvc.SyncTaskCodesAsync(_editProject.Id, projectCode);
+                            await _taskService.SyncTaskCodesAsync(_editProject.Id, projectCode);
                         }
 
                         this.DialogResult = DialogResult.OK;

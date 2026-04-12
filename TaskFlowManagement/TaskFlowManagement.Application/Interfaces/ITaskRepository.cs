@@ -74,6 +74,8 @@ namespace TaskFlowManagement.Core.Interfaces
         /// </summary>
         Task<List<TaskItem>> GetByProjectAsync(int projectId, bool includeSubTasks = false);
 
+        Task<int> GetMaxTaskNumberByProjectAsync(int projectId);
+
         // ── Cảnh báo / Dashboard ─────────────────────────────────
 
         /// <summary>Task đã quá hạn (DueDate &lt; Now và chưa hoàn thành).</summary>

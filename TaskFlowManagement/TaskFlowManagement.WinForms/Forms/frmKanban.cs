@@ -64,14 +64,17 @@ namespace TaskFlowManagement.WinForms.Forms
                 _taskService.TaskDataChanged += OnTaskDataChanged;
         }
 
-        private async void OnTaskDataChanged(object? sender, EventArgs e)
+        private void OnTaskDataChanged(object? sender, EventArgs e)
         {
             if (this.IsHandleCreated && !this.IsDisposed)
-                // BeginInvoke (thay vì Invoke) tránh deadlock với async lambda
-                this.BeginInvoke(async () =>
+            {
+                this.BeginInvoke(new Action(async () =>
                 {
-                    if (!this.IsDisposed) await LoadTasksAsync();
-                });
+                    if (this.IsDisposed) return;
+                    try { await LoadTasksAsync(); }
+                    catch { /* log or ignore */ }
+                }));
+            }
         }
 
         // ── Làm đẹp: toàn bộ màu sắc, font, style ────────────────────────────
@@ -185,8 +188,8 @@ namespace TaskFlowManagement.WinForms.Forms
             lblBadge.Paint += LblBadge_Paint;
 
             // Căn badge về phía phải header khi resize
-            pnlColHeader.SizeChanged += (_, _) =>
-                lblBadge.Location = new System.Drawing.Point(pnlColHeader.Width - lblBadge.Width - 8, 12);
+            pnlColHeader.Tag = lblBadge;
+            pnlColHeader.SizeChanged += PnlColHeader_SizeChanged;
 
             pnlColHeader.Controls.AddRange(new Control[] { lblColName, lblBadge });
 
@@ -199,6 +202,12 @@ namespace TaskFlowManagement.WinForms.Forms
 
             pnlColumn.Controls.Clear();
             pnlColumn.Controls.AddRange(new Control[] { flp, pnlColHeader });
+        }
+
+        private void PnlColHeader_SizeChanged(object? sender, EventArgs e)
+        {
+            if (sender is Panel pnl && pnl.Tag is Label badge)
+                badge.Location = new System.Drawing.Point(pnl.Width - badge.Width - 8, 12);
         }
 
         // ── Form Init ─────────────────────────────────────────────────────────
@@ -498,28 +507,35 @@ namespace TaskFlowManagement.WinForms.Forms
             int newStatusId = GetPrimaryStatusForPanel(targetPanel);
             if (newStatusId <= 0) return;
 
-            var (success, message) = await _taskService!.UpdateStatusAsync(
-                taskId, newStatusId, AppSession.UserId, AppSession.Roles);
-
-            if (!success)
+            try
             {
-                ShowToast($"⚠  {message}", isError: true);
-                return;
+                var (success, message) = await _taskService!.UpdateStatusAsync(
+                    taskId, newStatusId, AppSession.UserId, AppSession.Roles);
+
+                if (!success)
+                {
+                    ShowToast($"⚠  {message}", isError: true);
+                    return;
+                }
+
+                var card = FindCardById(taskId);
+                if (card == null) return;
+
+                if (card.Parent is FlowLayoutPanel srcPanel) srcPanel.Controls.Remove(card);
+
+                if (card.Tag is TaskItem task) task.StatusId = newStatusId;
+
+                card.UpdateBoundStatus(newStatusId);
+                targetPanel.Controls.Add(card);
+                card.Visible = IsCardVisible(card);
+
+                UpdateAllColumnBadges();
+                ShowToast($"✔  Đã chuyển sang {Core.Constants.WorkflowConstants.GetStatusName(newStatusId)}");
             }
-
-            var card = FindCardById(taskId);
-            if (card == null) return;
-
-            if (card.Parent is FlowLayoutPanel srcPanel) srcPanel.Controls.Remove(card);
-
-            if (card.Tag is TaskItem task) task.StatusId = newStatusId;
-
-            card.UpdateBoundStatus(newStatusId);
-            targetPanel.Controls.Add(card);
-            card.Visible = IsCardVisible(card);
-
-            UpdateAllColumnBadges();
-            ShowToast($"✔  Đã chuyển sang {Core.Constants.WorkflowConstants.GetStatusName(newStatusId)}");
+            catch (Exception ex)
+            {
+                ShowToast($"⚠  Lỗi: {ex.Message}", isError: true);
+            }
         }
 
         // ── Cập nhật badge đếm card ───────────────────────────────────────────

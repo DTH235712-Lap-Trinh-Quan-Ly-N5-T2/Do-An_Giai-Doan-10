@@ -250,7 +250,7 @@ namespace TaskFlowManagement.Infrastructure.Repositories
                 .Include(t => t.Project)
                 .Include(t => t.AssignedTo)
                 .Where(t => t.Reviewer1Id == reviewer1Id &&
-                            t.Status.Name == "REVIEW-1")
+                            t.Status.Name == TaskFlowManagement.Core.Constants.WorkflowConstants.StatusNameReview1)
                 .OrderBy(t => t.DueDate)
                 .ToListAsync();
         }
@@ -266,7 +266,7 @@ namespace TaskFlowManagement.Infrastructure.Repositories
                 .Include(t => t.Project)
                 .Include(t => t.AssignedTo)
                 .Where(t => t.Reviewer2Id == reviewer2Id &&
-                            t.Status.Name == "REVIEW-2")
+                            t.Status.Name == TaskFlowManagement.Core.Constants.WorkflowConstants.StatusNameReview2)
                 .OrderBy(t => t.DueDate)
                 .ToListAsync();
         }
@@ -282,7 +282,7 @@ namespace TaskFlowManagement.Infrastructure.Repositories
                 .Include(t => t.Project)
                 .Include(t => t.AssignedTo)
                 .Where(t => t.TesterId == testerId &&
-                            t.Status.Name == "IN-TEST")
+                            t.Status.Name == TaskFlowManagement.Core.Constants.WorkflowConstants.StatusNameInTest)
                 .OrderBy(t => t.DueDate)
                 .ToListAsync();
         }
@@ -314,6 +314,16 @@ namespace TaskFlowManagement.Infrastructure.Repositories
                 .OrderByDescending(t => t.Priority.Level)
                 .ThenBy(t => t.DueDate)
                 .ToListAsync();
+        }
+
+        public async Task<int> GetMaxTaskNumberByProjectAsync(int projectId)
+        {
+            using var ctx = _contextFactory.CreateDbContext();
+            // Trích số cuối từ TaskCode, lấy MAX — atomic và không load toàn bộ list
+            return await ctx.TaskItems
+                .AsNoTracking()
+                .Where(t => t.ProjectId == projectId)
+                .CountAsync(); // hoặc dùng sequence DB nếu cần strict
         }
 
         // ════════════════════════════════════════════════════════
@@ -403,7 +413,7 @@ namespace TaskFlowManagement.Infrastructure.Repositories
         {
             using var ctx = _contextFactory.CreateDbContext();
 
-            if (statusId == 10) // CLOSED
+            if (statusId == TaskFlowManagement.Core.Constants.WorkflowConstants.StatusIdClosed) // CLOSED
             {
                 await ctx.TaskItems
                     .Where(t => t.Id == taskId)
@@ -433,29 +443,22 @@ namespace TaskFlowManagement.Infrastructure.Repositories
         ///   - 0–3 call tùy chọn: Reviewer1Id / Reviewer2Id / TesterId
         /// </summary>
         public async Task AssignReviewerAsync(
-    int taskId,
-    int? reviewer1Id,
-    int? reviewer2Id,
-    int? testerId,
-    int newStatusId)
+            int taskId,
+            int? reviewer1Id,
+            int? reviewer2Id,
+            int? testerId,
+            int newStatusId)
         {
             using var ctx = _contextFactory.CreateDbContext();
 
-            // 1. Chỉ Load entity (không load navigation để nhẹ nhất có thể)
-            var task = await ctx.TaskItems.FirstOrDefaultAsync(t => t.Id == taskId);
-            if (task == null) return;
-
-            // 2. Gán giá trị mới
-            task.StatusId = newStatusId;
-            task.UpdatedAt = DateTime.UtcNow;
-
-            if (reviewer1Id.HasValue) task.Reviewer1Id = reviewer1Id.Value;
-            if (reviewer2Id.HasValue) task.Reviewer2Id = reviewer2Id.Value;
-            if (testerId.HasValue) task.TesterId = testerId.Value;
-
-            // 3. EF Core sẽ tự động so sánh và sinh ra đúng 1 câu SQL UPDATE
-            // cho những cột thực sự bị thay đổi.
-            await ctx.SaveChangesAsync();
+            await ctx.TaskItems
+                .Where(t => t.Id == taskId)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(t => t.StatusId,    newStatusId)
+                    .SetProperty(t => t.UpdatedAt,   DateTime.UtcNow)
+                    .SetProperty(t => t.Reviewer1Id, t => reviewer1Id ?? t.Reviewer1Id)
+                    .SetProperty(t => t.Reviewer2Id, t => reviewer2Id ?? t.Reviewer2Id)
+                    .SetProperty(t => t.TesterId,    t => testerId    ?? t.TesterId));
         }
 
         // ════════════════════════════════════════════════════════
@@ -496,20 +499,37 @@ namespace TaskFlowManagement.Infrastructure.Repositories
 
             var stats = new DashboardStatsDto();
 
-            // 1. Basic Task Counts (chạy parallel cho nhanh nếu cần, nhưng chạy tuần tự cũng được vì SQLite/SQL Express dễ handle)
-            stats.TotalTasks = await taskQuery.CountAsync();
-            stats.CompletedTasks = await taskQuery.CountAsync(t => t.IsCompleted);
-            stats.OverdueTasks = await taskQuery.CountAsync(t => !t.IsCompleted && t.DueDate < now);
-            stats.DueSoonTasks = await taskQuery.CountAsync(t => !t.IsCompleted && t.DueDate >= now && t.DueDate <= dueSoonThreshold);
+            // 1. Basic Task Counts (1 round-trip query)
+            var summary = await taskQuery.Select(t => new
+            {
+                IsCompleted = t.IsCompleted,
+                IsOverdue   = !t.IsCompleted && t.DueDate < now,
+                IsDueSoon   = !t.IsCompleted && t.DueDate >= now && t.DueDate <= dueSoonThreshold
+            })
+            .GroupBy(_ => 1)
+            .Select(g => new
+            {
+                Total     = g.Count(),
+                Completed = g.Count(x => x.IsCompleted),
+                Overdue   = g.Count(x => x.IsOverdue),
+                DueSoon   = g.Count(x => x.IsDueSoon)
+            })
+            .FirstOrDefaultAsync();
+
+            stats.TotalTasks     = summary?.Total     ?? 0;
+            stats.CompletedTasks = summary?.Completed ?? 0;
+            stats.OverdueTasks   = summary?.Overdue   ?? 0;
+            stats.DueSoonTasks   = summary?.DueSoon   ?? 0;
 
             // 2. Status Summary (Vẽ Pie Chart)
             var statusGroups = await taskQuery
-                .GroupBy(t => t.StatusId)
+                .GroupBy(t => new { t.StatusId, t.Status.Name, t.Status.ColorHex })
                 .Select(g => new 
                 { 
-                    StatusId = g.Key, 
-                    Count = g.Count(),
-                    ColorHex = g.Max(t => t.Status.ColorHex)
+                    StatusId = g.Key.StatusId, 
+                    StatusName = g.Key.Name,
+                    ColorHex = g.Key.ColorHex,
+                    Count = g.Count()
                 })
                 .ToListAsync();
 
@@ -517,7 +537,7 @@ namespace TaskFlowManagement.Infrastructure.Repositories
             {
                 stats.StatusSummaries.Add(new StatusSummaryDto
                 {
-                    StatusName = WorkflowConstants.GetStatusName(group.StatusId),
+                    StatusName = string.IsNullOrEmpty(group.StatusName) ? $"Status {group.StatusId}" : group.StatusName,
                     Count = group.Count,
                     ColorHex = string.IsNullOrEmpty(group.ColorHex) ? "#94A3B8" : group.ColorHex
                 });
@@ -533,6 +553,8 @@ namespace TaskFlowManagement.Infrastructure.Repositories
                     ProjectName = g.Key.Name,
                     AvgProgress = g.Average(t => (double)t.ProgressPercent)
                 })
+                .OrderByDescending(p => p.AvgProgress)
+                .ThenBy(p => p.ProjectName)
                 .ToListAsync();
 
             foreach (var proj in projectProgressGroups)
@@ -543,12 +565,6 @@ namespace TaskFlowManagement.Infrastructure.Repositories
                     ProgressPercentage = (decimal)Math.Round(proj.AvgProgress, 1)
                 });
             }
-
-            // Sắp xếp tiến độ giảm dần để biểu đồ hiển thị dự án hoàn thành nhất trước
-            stats.ProjectProgresses = stats.ProjectProgresses
-                .OrderByDescending(p => p.ProgressPercentage)
-                .ThenBy(p => p.ProjectName)
-                .ToList();
 
             return stats;
         }

@@ -280,10 +280,17 @@ namespace TaskFlowManagement.WinForms.Forms
         }
 
         // ── Lắng nghe thay đổi dữ liệu từ form khác ──────────────────────────
-        private async void OnTaskDataChanged(object? sender, EventArgs e)
+        private void OnTaskDataChanged(object? sender, EventArgs e)
         {
             if (this.IsHandleCreated && !this.IsDisposed)
-                this.Invoke((MethodInvoker)(async () => await LoadAllTabsAsync()));
+            {
+                this.BeginInvoke(new Action(async () =>
+                {
+                    if (this.IsDisposed) return;
+                    try { await LoadAllTabsAsync(); }
+                    catch { /* Handle */ }
+                }));
+            }
         }
 
         // ── Thanh trạng thái ─────────────────────────────────────────────────
