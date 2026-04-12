@@ -18,7 +18,6 @@ namespace TaskFlowManagement.WinForms.Forms
         private ProjectBudgetSummaryDto? _currentBudgetSummary = null;
 
         private int _hoverProgressIndex = -1;
-        private EventHandler? _taskDataChangedHandler;
 
         [Obsolete("Chỉ dùng cho WinForms Designer")]
         public frmDashboard()
