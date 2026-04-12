@@ -162,7 +162,7 @@ namespace TaskFlowManagement.WinForms.Forms
             this.btnEdit.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
             this.btnEdit.Location = new System.Drawing.Point(128, 11);
             this.btnEdit.Name = "btnEdit";
-            this.btnEdit.Size = new System.Drawing.Size(120, 32);
+            this.btnEdit.Size = new System.Drawing.Size(142, 32);
             this.btnEdit.Text = "✏️  Sửa thông tin";
             this.btnEdit.Click += new System.EventHandler(this.btnEdit_Click);
 
@@ -171,9 +171,9 @@ namespace TaskFlowManagement.WinForms.Forms
             this.btnDeactivate.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnDeactivate.FlatAppearance.BorderSize = 0;
             this.btnDeactivate.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
-            this.btnDeactivate.Location = new System.Drawing.Point(256, 11);
+            this.btnDeactivate.Location = new System.Drawing.Point(278, 11);
             this.btnDeactivate.Name = "btnDeactivate";
-            this.btnDeactivate.Size = new System.Drawing.Size(120, 32);
+            this.btnDeactivate.Size = new System.Drawing.Size(130, 32);
             this.btnDeactivate.Text = "🔴  Vô hiệu hóa";
             this.btnDeactivate.Click += new System.EventHandler(this.btnDeactivate_Click);
 
@@ -182,15 +182,15 @@ namespace TaskFlowManagement.WinForms.Forms
             this.btnActivate.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnActivate.FlatAppearance.BorderSize = 0;
             this.btnActivate.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
-            this.btnActivate.Location = new System.Drawing.Point(384, 11);
+            this.btnActivate.Location = new System.Drawing.Point(416, 11);
             this.btnActivate.Name = "btnActivate";
-            this.btnActivate.Size = new System.Drawing.Size(120, 32);
+            this.btnActivate.Size = new System.Drawing.Size(130, 32);
             this.btnActivate.Text = "✅  Kích hoạt lại";
             this.btnActivate.Click += new System.EventHandler(this.btnActivate_Click);
 
             this.lblCount.AutoSize = false;
             this.lblCount.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.lblCount.Location = new System.Drawing.Point(512, 11);
+            this.lblCount.Location = new System.Drawing.Point(554, 11);
             this.lblCount.Name = "lblCount";
             this.lblCount.Size = new System.Drawing.Size(130, 32);
             this.lblCount.Text = "";
