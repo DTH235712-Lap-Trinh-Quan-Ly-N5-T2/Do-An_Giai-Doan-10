@@ -11,6 +11,7 @@ namespace TaskFlowManagement.WinForms.Forms
         private readonly IProjectService _projectService;
         private readonly IExpenseService _expenseService;
 
+        private EventHandler? _taskDataChangedHandler;
         private DashboardStatsDto? _currentOverview = null;
         private List<ProgressReportDto> _currentProgress = new();
         private List<BudgetReportDto> _currentBudget = new();
@@ -146,8 +147,15 @@ namespace TaskFlowManagement.WinForms.Forms
             pnlProgressChart.MouseMove += PnlProgressChart_MouseMove;
             pnlProgressChart.MouseLeave += OnChartMouseLeave;
 
-            _taskDataChangedHandler = OnTaskDataChanged;
+            _taskDataChangedHandler = async (s, e) =>
+            {
+                if (this.IsHandleCreated && !this.IsDisposed)
+                {
+                    this.BeginInvoke(new Action(async () => await LoadDashboardDataAsync()));
+                }
+            };
             _taskService.TaskDataChanged += _taskDataChangedHandler;
+            this.FormClosing += (s, e) => _taskService.TaskDataChanged -= _taskDataChangedHandler;
 
             pnlBudgetLegend.Paint += PnlBudgetLegend_Paint;
         }
