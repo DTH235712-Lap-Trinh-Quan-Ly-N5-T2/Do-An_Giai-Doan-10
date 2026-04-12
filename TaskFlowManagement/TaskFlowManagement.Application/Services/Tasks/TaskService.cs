@@ -377,8 +377,11 @@ namespace TaskFlowManagement.Core.Services.Tasks
             var task = await _taskRepo.GetByIdAsync(taskId);
             if (task == null) return false;
 
-            var members = await _projectRepo.GetMembersAsync(task.ProjectId);
-            return members.Any(m => m.UserId == requesterId);
+            return task.AssignedToId == requesterId ||
+                   task.Reviewer1Id == requesterId ||
+                   task.Reviewer2Id == requesterId ||
+                   task.TesterId == requesterId ||
+                   task.CreatedById == requesterId;
         }
 
         public async Task<List<Comment>> GetCommentsAsync(int taskId)

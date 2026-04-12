@@ -303,12 +303,18 @@ namespace TaskFlowManagement.WinForms.Forms
                 r.Equals("Manager", StringComparison.OrdinalIgnoreCase));
 
             bool isAssignee = _editingTask.AssignedToId == AppSession.UserId;
+            bool canEditOrComment = isManager || isAssignee;
 
             // HOTFIX: cboProject LUÔN MỞ cho Admin/Manager để cho phép đổi dự án
             cboProject.Enabled = isManager;
-            cboStatus.Enabled = isManager || isAssignee;
+            cboStatus.Enabled = canEditOrComment;
             cboPriority.Enabled = isManager;
-            cboAssignee.Enabled = isManager || isAssignee;
+            cboAssignee.Enabled = canEditOrComment;
+
+            // Mở khóa các control bình luận và đính kèm
+            txtNewComment.Enabled = canEditOrComment;
+            btnSendComment.Enabled = canEditOrComment;
+            btnChooseFile.Enabled = canEditOrComment;
 
             await LoadCommentsAsync();
             await LoadAttachmentsAsync();
