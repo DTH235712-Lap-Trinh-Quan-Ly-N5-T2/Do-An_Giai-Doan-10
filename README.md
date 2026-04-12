@@ -13,7 +13,7 @@
 | **MSSV** | DTH235712 |
 | **Lớp** | DH24TH2 |
 | **Năm học** | 2025 – 2026 |
-| **Tiến độ** | Giai đoạn 1 ✅  Giai đoạn 2 ✅  Giai đoạn 3 ✅ Giai đoạn 4 ✅  (4 / 10 hoàn thành) |
+| **Tiến độ** | Giai đoạn 1 ✅  Giai đoạn 2 ✅  Giai đoạn 3 ✅ Giai đoạn 4 ✅ Giai đoạn 5 ✅ Giai đoạn 6 ✅ Giai đoạn 7 ✅ Giai đoạn 8 ✅ Giai đoạn 9 ✅ Giai đoạn 10 ✅  (10 / 10 hoàn thành) |
 
 ---
 
