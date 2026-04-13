@@ -498,9 +498,9 @@ namespace TaskFlowManagement.Infrastructure.Repositories
 
             // 1. Basic Task Counts (chạy parallel cho nhanh nếu cần, nhưng chạy tuần tự cũng được vì SQLite/SQL Express dễ handle)
             stats.TotalTasks = await taskQuery.CountAsync();
-            stats.CompletedTasks = await taskQuery.CountAsync(t => t.IsCompleted);
-            stats.OverdueTasks = await taskQuery.CountAsync(t => !t.IsCompleted && t.DueDate < now);
-            stats.DueSoonTasks = await taskQuery.CountAsync(t => !t.IsCompleted && t.DueDate >= now && t.DueDate <= dueSoonThreshold);
+            stats.CompletedTasks = await taskQuery.CountAsync(t => t.StatusId == 9 || t.StatusId == 10);
+            stats.OverdueTasks = await taskQuery.CountAsync(t => t.StatusId != 9 && t.StatusId != 10 && t.DueDate < now);
+            stats.DueSoonTasks = await taskQuery.CountAsync(t => t.StatusId != 9 && t.StatusId != 10 && t.DueDate >= now && t.DueDate <= dueSoonThreshold);
 
             // 2. Status Summary (Vẽ Pie Chart)
             var statusGroups = await taskQuery
@@ -588,7 +588,7 @@ namespace TaskFlowManagement.Infrastructure.Repositories
                 {
                     ProjectName = p.Name,
                     TotalTasks = p.Tasks.Count(),
-                    CompletedTasks = p.Tasks.Count(t => t.IsCompleted),
+                    CompletedTasks = p.Tasks.Count(t => t.StatusId == 9 || t.StatusId == 10),
                     AvgProgress = p.Tasks.Any() ? (decimal)p.Tasks.Average(t => (double)t.ProgressPercent) : 0m,
                     Status = p.Status
                 })

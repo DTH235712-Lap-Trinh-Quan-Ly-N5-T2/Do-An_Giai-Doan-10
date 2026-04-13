@@ -145,6 +145,10 @@ namespace TaskFlowManagement.WinForms.Common
         // ── DataGridView ──────────────────────────────────────────────────────
         public static void StyleDataGridView(DataGridView dgv)
         {
+            // Bật DoubleBuffered (ẩn) qua Reflection để chống màn hình DataGridView chớp nháy (flicker) khi bind dữ liệu.
+            var propInfo = typeof(DataGridView).GetProperty("DoubleBuffered", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            propInfo?.SetValue(dgv, true, null);
+
             dgv.AutoGenerateColumns = false;
             dgv.AllowUserToAddRows = false;
             dgv.AllowUserToDeleteRows = false;

@@ -266,29 +266,41 @@ namespace TaskFlowManagement.Core.Services.Tasks
             if (statusId is < 1 or > 10)
                 return (false, $"Trạng thái không hợp lệ (Id={statusId}). Phải từ 1 đến 10.");
 
-            // Lấy tên status để hiển thị message — chỉ khi cần (sau khi auth pass)
             bool isManagerOrAbove =
                 requesterRoles.Any(r => r.Equals("Admin", StringComparison.OrdinalIgnoreCase) ||
                                         r.Equals("Manager", StringComparison.OrdinalIgnoreCase));
-
-            if (isManagerOrAbove)
-            {
-                await _taskRepo.UpdateStatusAsync(taskId, statusId);
-                NotifyDataChanged();
-                return (true, $"Đã chuyển trạng thái sang \"{WorkflowConstants.GetStatusName(statusId)}\".");
-            }
 
             var task = await _taskRepo.GetByIdAsync(taskId);
             if (task == null)
                 return (false, "Không tìm thấy công việc.");
 
-            if (task.AssignedToId != requesterId)
+            if (!isManagerOrAbove && task.AssignedToId != requesterId)
+            {
                 return (false,
                     "Bạn chỉ có thể thay đổi trạng thái công việc được giao cho mình.\n" +
                     "Liên hệ Manager nếu cần thay đổi task khác.");
+            }
 
-            await _taskRepo.UpdateStatusAsync(taskId, statusId);
-            NotifyDataChanged();
+            if (statusId == 9 || statusId == 10)
+            {
+                task.StatusId = statusId;
+                task.ProgressPercent = 100;
+                task.IsCompleted = true;
+                await _taskRepo.UpdateAsync(task);
+            }
+            else if (statusId == 3 || statusId == 4)
+            {
+                task.StatusId = statusId;
+                task.ProgressPercent = 0;
+                task.IsCompleted = false;
+                await _taskRepo.UpdateAsync(task);
+            }
+            else
+            {
+                await _taskRepo.UpdateStatusAsync(taskId, statusId);
+            }
+
+            TaskDataChanged?.Invoke(this, EventArgs.Empty);
             return (true, $"Đã chuyển trạng thái sang \"{WorkflowConstants.GetStatusName(statusId)}\".");
         }
 

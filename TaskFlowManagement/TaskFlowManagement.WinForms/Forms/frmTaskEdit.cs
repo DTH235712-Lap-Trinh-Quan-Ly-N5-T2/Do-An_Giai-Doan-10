@@ -109,6 +109,20 @@ namespace TaskFlowManagement.WinForms.Forms
             this.Font = UIHelper.FontBase;
         }
 
+        // ── Overrides ─────────────────────────────────────────────────────────
+
+        protected override CreateParams CreateParams
+        {
+            get
+            {
+                var cp = base.CreateParams;
+                // Tắt cờ WS_EX_COMPOSITED (0x02000000) vì nó gây xung đột nghiêm trọng với TabControl
+                // dẫn đến hiện tượng nháy màn hình liên tục (flicker loop).
+                cp.ExStyle &= ~0x02000000;
+                return cp;
+            }
+        }
+
         // ── Form Load ─────────────────────────────────────────────────────────
 
         protected override async void OnLoad(EventArgs e)
@@ -154,12 +168,22 @@ namespace TaskFlowManagement.WinForms.Forms
                 this.Cursor = Cursors.Default;
             }
 
-            // DoubleBuffer cho FlowLayoutPanel chống flickering
+            // DoubleBuffer cho FlowLayoutPanel và TabControl chống flickering
             SetDoubleBuffered(pnlCommentsList);
+            SetDoubleBuffered(tabControlMain);
             // FIX BUG #2: Idempotent pattern — gỡ trước rồi mới đăng ký
             // để đảm bảo handler chỉ chạy duy nhất 1 lần dù OnLoad gọi lại.
             txtNewComment.KeyDown -= txtNewComment_KeyDown;
             txtNewComment.KeyDown += txtNewComment_KeyDown;
+
+            cboStatus.SelectedIndexChanged -= cboStatus_SelectedIndexChanged;
+            cboStatus.SelectedIndexChanged += cboStatus_SelectedIndexChanged;
+            
+            chkIsCompleted.CheckedChanged -= chkIsCompleted_CheckedChanged;
+            chkIsCompleted.CheckedChanged += chkIsCompleted_CheckedChanged;
+            
+            numProgress.ValueChanged -= numProgress_ValueChanged;
+            numProgress.ValueChanged += numProgress_ValueChanged;
         }
 
         /// <summary>Bật DoubleBuffered cho bất kỳ Control nào qua Reflection (WinForms ẩn thuộc tính này).</summary>
@@ -345,8 +369,90 @@ namespace TaskFlowManagement.WinForms.Forms
         private void chkHasDueDate_CheckedChanged(object sender, EventArgs e)
             => dtpDueDate.Enabled = chkHasDueDate.Checked;
 
+        private bool _isUpdatingAuto = false;
+
         private void numProgress_ValueChanged(object sender, EventArgs e)
-            => chkIsCompleted.Checked = numProgress.Value == 100;
+        {
+            if (_isUpdatingAuto) return;
+            _isUpdatingAuto = true;
+            
+            try
+            {
+                chkIsCompleted.Checked = numProgress.Value == 100;
+                
+                if (numProgress.Value == 100)
+                {
+                    var statusId = GetComboId(cboStatus);
+                    if (statusId != 9 && statusId != 10 && statusId > 0)
+                        SelectComboById(cboStatus, 9); // RESOLVED
+                }
+                else if (numProgress.Value == 0)
+                {
+                    var statusId = GetComboId(cboStatus);
+                    if (statusId == 9 || statusId == 10)
+                        SelectComboById(cboStatus, 3); // IN-PROGRESS
+                }
+            }
+            finally
+            {
+                _isUpdatingAuto = false;
+            }
+        }
+
+        private void chkIsCompleted_CheckedChanged(object? sender, EventArgs e)
+        {
+            if (_isUpdatingAuto) return;
+            _isUpdatingAuto = true;
+            
+            try
+            {
+                if (chkIsCompleted.Checked)
+                {
+                    numProgress.Value = 100;
+                    var statusId = GetComboId(cboStatus);
+                    if (statusId != 9 && statusId != 10 && statusId > 0)
+                        SelectComboById(cboStatus, 9); // RESOLVED
+                }
+                else
+                {
+                    if (numProgress.Value == 100)
+                        numProgress.Value = 0;
+                        
+                    var statusId = GetComboId(cboStatus);
+                    if (statusId == 9 || statusId == 10)
+                        SelectComboById(cboStatus, 3); // IN-PROGRESS
+                }
+            }
+            finally
+            {
+                _isUpdatingAuto = false;
+            }
+        }
+
+        private void cboStatus_SelectedIndexChanged(object? sender, EventArgs e)
+        {
+            if (_isUpdatingAuto) return;
+            _isUpdatingAuto = true;
+            
+            try
+            {
+                var statusId = GetComboId(cboStatus);
+                if (statusId == 9 || statusId == 10) // RESOLVED or CLOSED
+                {
+                    numProgress.Value = 100;
+                    chkIsCompleted.Checked = true;
+                }
+                else if (statusId == 3 || statusId == 4) // IN-PROGRESS or FAILED
+                {
+                    numProgress.Value = 0;
+                    chkIsCompleted.Checked = false;
+                }
+            }
+            finally
+            {
+                _isUpdatingAuto = false;
+            }
+        }
 
         // ── Save ──────────────────────────────────────────────────────────────
 

@@ -92,7 +92,7 @@ namespace TaskFlowManagement.WinForms.Forms
 
             numAmount.ThousandsSeparator = true;
             numAmount.DecimalPlaces = 0;
-            numAmount.Maximum = 1_000_000_000;
+            numAmount.Maximum = 1_000_000_000_000m;
 
             if (_editingExpense != null)
             {

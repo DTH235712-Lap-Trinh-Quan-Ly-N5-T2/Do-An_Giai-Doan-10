@@ -26,6 +26,8 @@ namespace TaskFlowManagement.WinForms.Forms
         private List<Status> _statuses = new();
         private List<Project> _projects = new();
 
+        private EventHandler? _taskDataChangedHandler;
+
         // ── Constructors ──────────────────────────────────────────
 
         [Obsolete("Chỉ dùng cho WinForms Designer")]
@@ -49,8 +51,7 @@ namespace TaskFlowManagement.WinForms.Forms
 
             ApplyClientStyles();
 
-            _taskService.TaskDataChanged += OnTaskDataChanged;
-            dgvTasks.CellFormatting      += dgvTasks_CellFormatting;
+            dgvTasks.CellFormatting += dgvTasks_CellFormatting;
         }
 
         // ── Khởi tạo giao diện ────────────────────────────────────
@@ -126,17 +127,21 @@ namespace TaskFlowManagement.WinForms.Forms
             await LoadDataAsync();
         }
 
-        private async void OnTaskDataChanged(object? sender, EventArgs e)
-        {
-            if (this.IsHandleCreated && !this.IsDisposed)
-                this.Invoke((MethodInvoker)(async () => await LoadDataAsync()));
-        }
-
         // ── Form Load ─────────────────────────────────────────────
 
         protected override async void OnLoad(EventArgs e)
         {
             base.OnLoad(e);
+
+            _taskDataChangedHandler = (s, ev) => 
+            {
+                if (this.IsHandleCreated && !this.IsDisposed)
+                {
+                    this.BeginInvoke(new Action(async () => await LoadDataAsync()));
+                }
+            };
+            _taskService.TaskDataChanged += _taskDataChangedHandler;
+
             ApplyRolePermissions();
             await LoadLookupsAsync();
             await LoadDataAsync();
@@ -511,9 +516,17 @@ namespace TaskFlowManagement.WinForms.Forms
 
         private void SetStatus(string msg) => lblStatus.Text = msg;
 
+        protected override void OnFormClosing(FormClosingEventArgs e)
+        {
+            if (_taskDataChangedHandler != null)
+            {
+                _taskService.TaskDataChanged -= _taskDataChangedHandler;
+            }
+            base.OnFormClosing(e);
+        }
+
         protected override void OnFormClosed(FormClosedEventArgs e)
         {
-            _taskService.TaskDataChanged -= OnTaskDataChanged;
             dgvTasks.CellFormatting      -= dgvTasks_CellFormatting;
             _debounceTimer.Stop();
             _debounceTimer.Dispose();

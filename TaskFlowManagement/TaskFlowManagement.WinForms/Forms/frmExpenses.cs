@@ -199,6 +199,9 @@ namespace TaskFlowManagement.WinForms.Forms
             colDate.DataPropertyName = "ExpenseDateDisplay";
             colNote.DataPropertyName = "Note";
             colCreatedBy.DataPropertyName = "CreatorName";
+
+            // Giãn cột Tên Dự Án
+            colProject.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
         }
 
         // ── Phân quyền hiển thị nút ──────────────────────────────────────────

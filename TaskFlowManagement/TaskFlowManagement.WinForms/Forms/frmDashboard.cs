@@ -18,6 +18,9 @@ namespace TaskFlowManagement.WinForms.Forms
         private ProjectBudgetSummaryDto? _currentBudgetSummary = null;
 
         private int _hoverProgressIndex = -1;
+        private int _hoverBudgetIndex = -1;
+        private ToolTip? _sharedToolTip;
+        private string? _currentToolTipText;
 
         [Obsolete("Chỉ dùng cho WinForms Designer")]
         public frmDashboard()
@@ -37,6 +40,13 @@ namespace TaskFlowManagement.WinForms.Forms
             InitializeComponent();
             ApplyClientStyles();
             SetupUI();
+            
+            _sharedToolTip = new ToolTip
+            {
+                InitialDelay = 400,
+                ReshowDelay = 100,
+                ShowAlways = true
+            };
         }
 
         // ══════════════════════════════════════════════════════════════════
@@ -145,6 +155,9 @@ namespace TaskFlowManagement.WinForms.Forms
 
             pnlProgressChart.MouseMove += PnlProgressChart_MouseMove;
             pnlProgressChart.MouseLeave += OnChartMouseLeave;
+            
+            pnlBudgetChart.MouseMove += PnlBudgetChart_MouseMove;
+            pnlBudgetChart.MouseLeave += OnBudgetChartMouseLeave;
 
             _taskDataChangedHandler = async (s, e) =>
             {
@@ -166,6 +179,60 @@ namespace TaskFlowManagement.WinForms.Forms
         {
             _hoverProgressIndex = -1;
             pnlProgressChart.Invalidate();
+            _currentToolTipText = null;
+            _sharedToolTip?.SetToolTip(pnlProgressChart, null);
+        }
+
+        private void OnBudgetChartMouseLeave(object? sender, EventArgs e)
+        {
+            _hoverBudgetIndex = -1;
+            pnlBudgetChart.Invalidate();
+            _currentToolTipText = null;
+            _sharedToolTip?.SetToolTip(pnlBudgetChart, null);
+        }
+
+        private void PnlBudgetChart_MouseMove(object? sender, MouseEventArgs e)
+        {
+            if (_currentBudget == null || !_currentBudget.Any()) return;
+
+            int adjustedY = e.Y - pnlBudgetChart.AutoScrollPosition.Y;
+            
+            const int paddingTop = 72;
+            const int rowStride = 22 * 2 + 6 + 16; 
+
+            int startY = paddingTop;
+            int newHoverIndex = -1;
+
+            for (int i = 0; i < _currentBudget.Count; i++)
+            {
+                if (adjustedY >= startY && adjustedY < startY + rowStride)
+                {
+                    newHoverIndex = i;
+                    break;
+                }
+                startY += rowStride;
+            }
+
+            if (_hoverBudgetIndex != newHoverIndex)
+            {
+                _hoverBudgetIndex = newHoverIndex;
+                pnlBudgetChart.Invalidate();
+                
+                if (newHoverIndex >= 0 && newHoverIndex < _currentBudget.Count)
+                {
+                    var projName = _currentBudget[newHoverIndex].ProjectName;
+                    if (_currentToolTipText != projName)
+                    {
+                        _currentToolTipText = projName;
+                        _sharedToolTip?.SetToolTip(pnlBudgetChart, projName);
+                    }
+                }
+                else
+                {
+                    _currentToolTipText = null;
+                    _sharedToolTip?.SetToolTip(pnlBudgetChart, null);
+                }
+            }
         }
 
         private async void OnTaskDataChanged(object? sender, EventArgs e)
@@ -221,6 +288,21 @@ namespace TaskFlowManagement.WinForms.Forms
             {
                 _hoverProgressIndex = newHoverIndex;
                 pnlProgressChart.Invalidate();
+                
+                if (newHoverIndex >= 0 && newHoverIndex < _currentProgress.Count)
+                {
+                    var projName = _currentProgress[newHoverIndex].ProjectName;
+                    if (_currentToolTipText != projName)
+                    {
+                        _currentToolTipText = projName;
+                        _sharedToolTip?.SetToolTip(pnlProgressChart, projName);
+                    }
+                }
+                else
+                {
+                    _currentToolTipText = null;
+                    _sharedToolTip?.SetToolTip(pnlProgressChart, null);
+                }
             }
         }
 
@@ -604,7 +686,7 @@ namespace TaskFlowManagement.WinForms.Forms
             }
 
             const int marginLeft = 30;
-            const int nameWidth = 260;   // mở rộng cột tên để hiển thị đủ ký tự
+            const int nameWidth = 420;   // mở rộng cột tên lên 420px
             const int barHeight = 26;
             int maxBarWidth = pnlProgressChart.ClientSize.Width - marginLeft - nameWidth - 80;
             if (maxBarWidth < 100) maxBarWidth = 100;
@@ -622,29 +704,40 @@ namespace TaskFlowManagement.WinForms.Forms
                         pnlProgressChart.ClientSize.Width - marginLeft * 2 + 24, 62);
                 }
 
-                // Cắt tên dài hơn 34 ký tự để vừa cột 260px
-                string displayName = proj.ProjectName.Length > 34
-                    ? proj.ProjectName[..31] + "…"
-                    : proj.ProjectName;
+                // Bỏ logic cắt tên thủ công, nhường GDI+ tính toán 
+                string cleanName = proj.ProjectName.Replace("_", " ");
 
+                var nameRect = new RectangleF(marginLeft + 12, startY, nameWidth - 20, 26);
+                using (var nameSf = new StringFormat
+                {
+                    Alignment = StringAlignment.Near,
+                    LineAlignment = StringAlignment.Near,
+                    Trimming = StringTrimming.EllipsisCharacter,
+                    FormatFlags = StringFormatFlags.NoWrap
+                })
                 using (var nameBrush = new SolidBrush(UIHelper.ColorTextPrimary))
-                    g.DrawString(displayName, UIHelper.FontGridHeader, nameBrush,
-                        marginLeft + 12, startY);
+                {
+                    g.DrawString(cleanName, UIHelper.FontGridHeader, nameBrush, nameRect, nameSf);
+                }
 
                 using (var muteBrush = new SolidBrush(UIHelper.ColorMuted))
                     g.DrawString($"{proj.CompletedTasks}/{proj.TotalTasks} tasks",
                         UIHelper.FontSmall, muteBrush, marginLeft + 12, startY + 20);
 
-                int barX = marginLeft + nameWidth;
+                // Padding: Dời tọa độ X sang phải 15 pixels
+                int barX = marginLeft + nameWidth + 15;
                 var bgRect = new Rectangle(barX, startY, maxBarWidth, barHeight);
                 using (var bgBrush = new SolidBrush(UIHelper.ColorBorderLight))
                     g.FillRectangle(bgBrush, bgRect);
 
+                // Sửa sai số logic % bằng cách đếm theo completed và total tasks
+                decimal truePercent = proj.TotalTasks == 0 ? 0m : (decimal)proj.CompletedTasks / proj.TotalTasks * 100m;
+
                 Color barColor = UIHelper.ColorPrimary;
-                if (proj.AvgProgress >= 100) barColor = UIHelper.ColorSuccess;
+                if (truePercent >= 100) barColor = UIHelper.ColorSuccess;
                 else if (proj.Status is "OnHold" or "Delayed") barColor = UIHelper.ColorWarning;
 
-                int fillWidth = (int)(maxBarWidth * (double)(proj.AvgProgress / 100m));
+                int fillWidth = (int)(maxBarWidth * (double)(truePercent / 100m));
                 if (fillWidth > 0)
                 {
                     var fillRect = new Rectangle(barX, startY, fillWidth, barHeight);
@@ -657,11 +750,19 @@ namespace TaskFlowManagement.WinForms.Forms
                 }
 
                 g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
-                string pctText = $"{Math.Round(proj.AvgProgress, 1)}%";
+                string pctText = $"{Math.Round(truePercent, 1)}%";
                 SizeF pctSize = g.MeasureString(pctText, UIHelper.FontBase);
+                
+                // Edge-case số % nhỏ: Đẩy % ra bên phải thay vì vẽ đè lên bar
+                float textX = barX + fillWidth + 6;
+                if (truePercent < 10)
+                {
+                    textX += 15;
+                }
+
                 using (var pctBrush = new SolidBrush(UIHelper.ColorTextPrimary))
                     g.DrawString(pctText, UIHelper.FontBase, pctBrush,
-                        barX + fillWidth + 6,
+                        textX,
                         startY + (barHeight - pctSize.Height) / 2);
 
                 using (var divPen = new Pen(UIHelper.ColorBorderLight))
@@ -704,7 +805,7 @@ namespace TaskFlowManagement.WinForms.Forms
 
             const int paddingTop = 72;
             const int paddingRight = 20;
-            const int labelColWidth = 260;  // cột tên — mở rộng để đọc được tên dự án dài
+            const int labelColWidth = 420;  // cột tên — mở rộng lên 420px
             const int barPairGap = 6;
             const int rowGap = 16;
             const int barThickness = 22;
@@ -752,23 +853,33 @@ namespace TaskFlowManagement.WinForms.Forms
             }
 
             int currentY = paddingTop;
+            int bRowIndex = 0;
 
             foreach (var item in _currentBudget)
             {
-                // Cắt tên dài hơn 32 ký tự để vừa cột 260px
-                string displayName = item.ProjectName.Length > 32
-                    ? item.ProjectName[..29] + "…"
-                    : item.ProjectName;
+                // Vẽ hover highlight như pnlProgressChart
+                if (_hoverBudgetIndex == bRowIndex)
+                {
+                    using var hoverBrush = new SolidBrush(Color.FromArgb(10, 0, 0, 0));
+                    g.FillRectangle(hoverBrush, 0, currentY - 2, pnlBudgetChart.ClientSize.Width, pairHeight + 4);
+                }
+
+                string displayName = item.ProjectName;
 
                 var nameRect = new RectangleF(4, currentY, labelColWidth - 8, pairHeight);
-                var nameSf = new StringFormat
+                using (var nameSf = new StringFormat
                 {
                     Alignment = StringAlignment.Far,
                     LineAlignment = StringAlignment.Center,
-                    Trimming = StringTrimming.EllipsisCharacter
-                };
+                    Trimming = StringTrimming.EllipsisCharacter,
+                    FormatFlags = StringFormatFlags.NoWrap
+                })
                 using (var nameBrush = new SolidBrush(UIHelper.ColorTextPrimary))
+                {
                     g.DrawString(displayName, UIHelper.FontGridHeader, nameBrush, nameRect, nameSf);
+                }
+
+                bRowIndex++;
 
                 // Thanh Budget
                 int wBudget = (int)(barMaxWidth * (double)(item.Budget / maxVal));
@@ -963,6 +1074,8 @@ namespace TaskFlowManagement.WinForms.Forms
         {
             if (_taskDataChangedHandler != null)
                 _taskService.TaskDataChanged -= _taskDataChangedHandler;
+
+            _sharedToolTip?.Dispose();
 
             base.OnFormClosed(e);
         }
