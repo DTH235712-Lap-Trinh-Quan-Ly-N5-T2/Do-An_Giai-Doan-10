@@ -23,15 +23,25 @@ namespace TaskFlowManagement.Core.Services.Users
         public async Task<(bool Success, string Message)> CreateUserAsync(
             string username, string fullName, string email, string password, string roleName, string? phone = null)
         {
+            // 1. Validate định dạng cơ bản
             if (!ValidationHelper.IsValidUsername(username))
                 return (false, "Username chỉ gồm chữ, số, dấu gạch dưới (3–50 ký tự).");
-            if (await _userRepo.IsUsernameExistsAsync(username))
-                return (false, $"Username '{username}' đã tồn tại.");
+                
             if (!ValidationHelper.IsValidEmail(email))
                 return (false, "Email không hợp lệ.");
+                
             if (!ValidationHelper.IsPasswordStrong(password))
                 return (false, "Mật khẩu phải có ít nhất 6 ký tự.");
 
+            // 2. KIỂM TRA TRÙNG LẶP DỮ LIỆU TỪ DATABASE
+            if (await _userRepo.IsUsernameExistsAsync(username))
+                return (false, $"Username '{username}' đã tồn tại.");
+
+            var existingEmail = await _userRepo.GetByEmailAsync(email.Trim());
+            if (existingEmail != null)
+                return (false, $"Email '{email}' đã được sử dụng bởi tài khoản khác.");
+
+            // 3. Tiến hành tạo User nếu mọi thứ OK
             var user = new User
             {
                 Username     = username.Trim(),
@@ -41,6 +51,7 @@ namespace TaskFlowManagement.Core.Services.Users
                 PasswordHash = _authService.HashPassword(password),
                 IsActive     = true
             };
+            
             await _userRepo.AddWithRoleAsync(user, roleName);
             return (true, $"Tạo tài khoản '{username}' thành công.");
         }

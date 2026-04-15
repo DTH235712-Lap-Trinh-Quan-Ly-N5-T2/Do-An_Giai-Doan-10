@@ -58,7 +58,8 @@ namespace TaskFlowManagement.WinForms
                 .Build();
             services.AddSingleton<IConfiguration>(config);
 
-            // 2. Database
+            // 2. Database / Việc dùng Factory rất quan trọng trong WinForms để tránh xung đột DbContext khi mở nhiều Form cùng lúc. 
+                           // Nó cũng cấu hình RetryOnFailure (tự kết nối lại nếu mạng lỗi) và NoTracking (tăng tốc độ đọc dữ liệu).
             services.AddDbContextFactory<AppDbContext>(options =>
                 options.UseSqlServer(
                     config.GetConnectionString("DefaultConnection"),
@@ -72,7 +73,7 @@ namespace TaskFlowManagement.WinForms
                 .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking)
             );
 
-            // 3. Repositories
+            // 3. Repositories / Đăng ký các lớp xử lý nghiệp vụ (Business Logic) và truy vấn dữ liệu (Data Access).
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IProjectRepository, ProjectRepository>();
             services.AddScoped<ITaskRepository, TaskRepository>();
@@ -81,14 +82,14 @@ namespace TaskFlowManagement.WinForms
             services.AddScoped<IAttachmentRepository, AttachmentRepository>();
             services.AddScoped<IExpenseRepository, ExpenseRepository>();
 
-            // 4. Services
+            // 4. Services / Đăng ký các lớp xử lý nghiệp vụ (Business Logic) và truy vấn dữ liệu (Data Access).
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<IProjectService, ProjectService>();
             services.AddScoped<ITaskService, TaskService>();
             services.AddScoped<IExpenseService, ExpenseService>();
 
-            // 5. Forms
+            // 5. Forms / Các Form cũng được đưa vào DI. Điều này cho phép các Form nhận các Service thông qua hàm Constructor (Constructor Injection).
             services.AddTransient<frmLogin>();
             services.AddTransient<frmMain>();
             services.AddTransient<frmHome>();
@@ -99,7 +100,6 @@ namespace TaskFlowManagement.WinForms
             // GD3: Quản lý Dự án
             services.AddTransient<frmProjects>();
             // GD4: Quản lý Công việc
-            // FIX: Thêm 3 form GD4 vào DI Container
             // DI tự inject (ITaskService, IProjectService, IUserService) vào constructor
             services.AddTransient<frmTaskList>();
             services.AddTransient<frmMyTasks>();
@@ -137,7 +137,7 @@ namespace TaskFlowManagement.WinForms
             }
 
             // Khởi động: Login → Main
-            // FIX BUG #6: Bọc using để Dispose frmLogin sau khi đăng nhập xong
+            // #6: Bọc using để Dispose frmLogin sau khi đăng nhập xong
             using var loginForm = ServiceProvider.GetRequiredService<frmLogin>();
             if (loginForm.ShowDialog() == DialogResult.OK)
             {
