@@ -1,13 +1,14 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using TaskFlowManagement.Core.Interfaces;
 using TaskFlowManagement.Core.Interfaces.Services;
+using TaskFlowManagement.Core.Services.Notifications;
+using TaskFlowManagement.Core.Interfaces;
 using TaskFlowManagement.Core.Services.Auth;
-using TaskFlowManagement.Core.Services.Users;
-using TaskFlowManagement.Core.Services.Projects;
 using TaskFlowManagement.Core.Services.Expenses;
+using TaskFlowManagement.Core.Services.Projects;
 using TaskFlowManagement.Core.Services.Tasks;
+using TaskFlowManagement.Core.Services.Users;
 using TaskFlowManagement.Infrastructure.Data;
 using TaskFlowManagement.Infrastructure.Repositories;
 using TaskFlowManagement.WinForms.Forms;
@@ -111,6 +112,8 @@ namespace TaskFlowManagement.WinForms
             // frmReportViewer KHÔNG đăng ký Transient vì nhận tham số runtime (projectId)
             // → Được khởi tạo trực tiếp bằng new frmReportViewer(_expenseService, projectId)
             //   trong frmExpenses.OpenReportAsync() – đây là exception pattern hợp lệ.
+            // Singleton: event aggregator dùng chung toàn process
+            services.AddSingleton<INotificationService, NotificationService>();
 
             ServiceProvider = services.BuildServiceProvider();
 

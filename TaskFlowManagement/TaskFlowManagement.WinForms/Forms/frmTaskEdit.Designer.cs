@@ -38,6 +38,12 @@ namespace TaskFlowManagement.WinForms.Forms
             txtDescription = new RichTextBox();
             lblEstimated = new Label();
             numEstimatedHours = new NumericUpDown();
+            lblReviewer1 = new Label();
+            cboReviewer1 = new ComboBox();
+            lblReviewer2 = new Label();
+            cboReviewer2 = new ComboBox();
+            lblTester    = new Label();
+            cboTester    = new ComboBox();
 
             lblPriority = new Label();
             cboPriority = new ComboBox();
@@ -229,7 +235,7 @@ namespace TaskFlowManagement.WinForms.Forms
             panelLeft.BackColor = System.Drawing.Color.Transparent;
             panelLeft.Location = new System.Drawing.Point(12, 12);
             panelLeft.Name = "panelLeft";
-            panelLeft.Size = new System.Drawing.Size(484, 510);
+            panelLeft.Size = new System.Drawing.Size(484, 560);
 
             // ── Tiêu đề công việc ─────────────────────────────────────────────
             SetFieldLabel(lblTitle, "TIÊU ĐỀ CÔNG VIỆC *", 0, 0);
@@ -269,23 +275,47 @@ namespace TaskFlowManagement.WinForms.Forms
             cboAssignee.Name = "cboAssignee";
             cboAssignee.Size = new System.Drawing.Size(480, 28);
 
+            // ── Reviewer 1 ────────────────────────────────────────────────────
+            SetFieldLabel(lblReviewer1, "NGƯỜI REVIEW LẦN 1", 0, 180);
+            cboReviewer1.DropDownStyle = ComboBoxStyle.DropDownList;
+            cboReviewer1.Font = new System.Drawing.Font("Segoe UI", 9F);
+            cboReviewer1.Location = new System.Drawing.Point(0, 200);
+            cboReviewer1.Name = "cboReviewer1";
+            cboReviewer1.Size = new System.Drawing.Size(480, 28);
+
+            // ── Reviewer 2 ────────────────────────────────────────────────────
+            SetFieldLabel(lblReviewer2, "NGƯỜI REVIEW LẦN 2", 0, 240);
+            cboReviewer2.DropDownStyle = ComboBoxStyle.DropDownList;
+            cboReviewer2.Font = new System.Drawing.Font("Segoe UI", 9F);
+            cboReviewer2.Location = new System.Drawing.Point(0, 260);
+            cboReviewer2.Name = "cboReviewer2";
+            cboReviewer2.Size = new System.Drawing.Size(480, 28);
+
+            // ── Tester ────────────────────────────────────────────────────────
+            SetFieldLabel(lblTester, "NGƯỜI KIỂM THỬ", 0, 300);
+            cboTester.DropDownStyle = ComboBoxStyle.DropDownList;
+            cboTester.Font = new System.Drawing.Font("Segoe UI", 9F);
+            cboTester.Location = new System.Drawing.Point(0, 320);
+            cboTester.Name = "cboTester";
+            cboTester.Size = new System.Drawing.Size(480, 28);
+
             // ── Mô tả ─────────────────────────────────────────────────────────
-            SetFieldLabel(lblDescription, "MÔ TẢ CHI TIẾT", 0, 180);
+            SetFieldLabel(lblDescription, "MÔ TẢ CHI TIẾT", 0, 360);
             txtDescription.BackColor = System.Drawing.Color.White;
             txtDescription.BorderStyle = BorderStyle.FixedSingle;
             txtDescription.Font = new System.Drawing.Font("Segoe UI", 9F);
-            txtDescription.Location = new System.Drawing.Point(0, 200);
+            txtDescription.Location = new System.Drawing.Point(0, 380);
             txtDescription.Name = "txtDescription";
             txtDescription.ScrollBars = RichTextBoxScrollBars.Vertical;
-            txtDescription.Size = new System.Drawing.Size(480, 140);
+            txtDescription.Size = new System.Drawing.Size(480, 100);
 
             // ── Số giờ ước tính ───────────────────────────────────────────────
-            SetFieldLabel(lblEstimated, "GIỜ ƯỚC TÍNH", 0, 354);
+            SetFieldLabel(lblEstimated, "GIỜ ƯỚC TÍNH", 0, 494);
             numEstimatedHours.BackColor = System.Drawing.Color.White;
             numEstimatedHours.BorderStyle = BorderStyle.FixedSingle;
             numEstimatedHours.DecimalPlaces = 1;
             numEstimatedHours.Font = new System.Drawing.Font("Segoe UI", 9F);
-            numEstimatedHours.Location = new System.Drawing.Point(0, 374);
+            numEstimatedHours.Location = new System.Drawing.Point(0, 514);
             numEstimatedHours.Maximum = 9999;
             numEstimatedHours.Minimum = 0;
             numEstimatedHours.Name = "numEstimatedHours";
@@ -295,7 +325,11 @@ namespace TaskFlowManagement.WinForms.Forms
             panelLeft.Controls.AddRange(new Control[]
             {
                 lblTitle, txtTitle, lblTaskCode, lblProject, cboProject,
-                lblAssignee, cboAssignee, lblDescription, txtDescription,
+                lblAssignee, cboAssignee,
+                lblReviewer1, cboReviewer1,
+                lblReviewer2, cboReviewer2,
+                lblTester,    cboTester,
+                lblDescription, txtDescription,
                 lblEstimated, numEstimatedHours,
             });
 
@@ -305,7 +339,7 @@ namespace TaskFlowManagement.WinForms.Forms
             panelRight.BackColor = System.Drawing.Color.Transparent;
             panelRight.Location = new System.Drawing.Point(510, 12);
             panelRight.Name = "panelRight";
-            panelRight.Size = new System.Drawing.Size(268, 510);
+            panelRight.Size = new System.Drawing.Size(268, 560);
 
             // ── Mức ưu tiên ───────────────────────────────────────────────────
             SetFieldLabel(lblPriority, "MỨC ƯU TIÊN *", 0, 0);
@@ -365,6 +399,7 @@ namespace TaskFlowManagement.WinForms.Forms
             dtpDueDate.Font = new System.Drawing.Font("Segoe UI", 9F);
             dtpDueDate.Format = DateTimePickerFormat.Short;
             dtpDueDate.Location = new System.Drawing.Point(0, 294);
+            dtpDueDate.MinDate = DateTime.Today;
             dtpDueDate.Name = "dtpDueDate";
             dtpDueDate.Size = new System.Drawing.Size(260, 28);
 
@@ -379,8 +414,8 @@ namespace TaskFlowManagement.WinForms.Forms
             // Form
             // ════════════════════════════════════════════════════
             this.Text = "📋  Công việc";
-            this.Size = new System.Drawing.Size(820, 680);
-            this.MinimumSize = new System.Drawing.Size(820, 640);
+            this.Size = new System.Drawing.Size(820, 820);
+            this.MinimumSize = new System.Drawing.Size(820, 780);
             this.MaximizeBox = false;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.Name = "frmTaskEdit";
@@ -450,5 +485,11 @@ namespace TaskFlowManagement.WinForms.Forms
         private CheckBox chkHasDueDate;
         private DateTimePicker dtpDueDate;
         private Button btnSave, btnCancel;
+        private Label lblReviewer1;
+        private ComboBox cboReviewer1;
+        private Label lblReviewer2;
+        private ComboBox cboReviewer2;
+        private Label lblTester;
+        private ComboBox cboTester;
     }
 }

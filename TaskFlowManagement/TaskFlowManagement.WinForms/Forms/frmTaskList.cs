@@ -34,6 +34,13 @@ namespace TaskFlowManagement.WinForms.Forms
         public frmTaskList()
         {
             InitializeComponent();
+
+            typeof(DataGridView).InvokeMember("DoubleBuffered",
+                System.Reflection.BindingFlags.NonPublic |
+                System.Reflection.BindingFlags.Instance |
+                System.Reflection.BindingFlags.SetProperty,
+                null, dgvTasks, new object[] { true });
+
             _debounceTimer.Tick += DebounceTimer_Tick;
         }
 
@@ -136,15 +143,23 @@ namespace TaskFlowManagement.WinForms.Forms
             _taskDataChangedHandler = (s, ev) => 
             {
                 if (this.IsHandleCreated && !this.IsDisposed)
-                {
                     this.BeginInvoke(new Action(async () => await LoadDataAsync()));
-                }
             };
             _taskService.TaskDataChanged += _taskDataChangedHandler;
 
             ApplyRolePermissions();
-            await LoadLookupsAsync();
-            await LoadDataAsync();
+
+            // Tránh nháy: ẩn grid + show loading text trong lúc load lần đầu
+            dgvTasks.Visible = false;
+            SetStatus("⏳ Đang tải dữ liệu lần đầu...");
+            try
+            {
+                await Task.WhenAll(LoadLookupsAsync(), LoadDataAsync());
+            }
+            finally
+            {
+                dgvTasks.Visible = true;
+            }
         }
 
         private void ApplyRolePermissions()
@@ -279,11 +294,14 @@ namespace TaskFlowManagement.WinForms.Forms
 
         private void BindGrid(List<TaskItem> items)
         {
-            dgvTasks.Rows.Clear();
-            _selectedTask = null;
-            RefreshButtonStates();
+            dgvTasks.SuspendLayout();
+            try
+            {
+                dgvTasks.Rows.Clear();
+                _selectedTask = null;
+                RefreshButtonStates();
 
-            foreach (var t in items)
+                foreach (var t in items)
             {
                 var due = t.DueDate.HasValue
                     ? t.DueDate.Value.ToLocalTime().ToString("dd/MM/yyyy") : "—";
@@ -307,6 +325,11 @@ namespace TaskFlowManagement.WinForms.Forms
                     t.Status?.Name,
                     t.IsCompleted,
                     t.DueDate);
+            }
+            }
+            finally
+            {
+                dgvTasks.ResumeLayout();
             }
 
             lblCount.Text = $"{items.Count} công việc";

@@ -178,6 +178,8 @@ namespace TaskFlowManagement.WinForms.Forms
 
             cboStatus.SelectedIndexChanged -= cboStatus_SelectedIndexChanged;
             cboStatus.SelectedIndexChanged += cboStatus_SelectedIndexChanged;
+            cboProject.SelectedIndexChanged -= cboProject_SelectedIndexChanged;
+            cboProject.SelectedIndexChanged += cboProject_SelectedIndexChanged;
             
             chkIsCompleted.CheckedChanged -= chkIsCompleted_CheckedChanged;
             chkIsCompleted.CheckedChanged += chkIsCompleted_CheckedChanged;
@@ -251,11 +253,7 @@ namespace TaskFlowManagement.WinForms.Forms
                     cboProject.Items.Add(new ComboItem(proj.Id, proj.Name));
                 cboProject.SelectedIndex = 0;
 
-                cboAssignee.Items.Clear();
-                cboAssignee.Items.Add(new ComboItem(0, "— Chưa gán —"));
-                foreach (var u in _users.OrderBy(u => u.FullName))
-                    cboAssignee.Items.Add(new ComboItem(u.Id, u.FullName));
-                cboAssignee.SelectedIndex = 0;
+                LoadUsersToComboBoxes();
 
                 // GD10: Tự động điều chỉnh kích thước Dropdown để không bị cắt chữ dự án hay tên người đài
                 cboProject.AdjustDropDownWidth();
@@ -269,6 +267,113 @@ namespace TaskFlowManagement.WinForms.Forms
                 MessageBox.Show("Không thể tải dữ liệu dropdown:\n" + ex.Message,
                     "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
+
+        private void LoadUsersToComboBoxes()
+        {
+            SetMemberCombosEnabled(false);
+        }
+
+         private async void cboProject_SelectedIndexChanged(object? sender, EventArgs e)
+        {
+            var projectId = GetComboId(cboProject);
+
+            if (projectId <= 0)
+            {
+                SetMemberCombosEnabled(false);
+                return;
+            }
+
+            await LoadProjectMembersAsync(projectId);
+
+            // Trong edit mode: nếu user chuyển sang dự án mới (khác dự án ban đầu của task)
+            // thì giữ lại lựa chọn cũ nếu các user đó vẫn là member của dự án mới
+            if (_editingTask != null)
+            {
+                SelectComboById(cboAssignee,  _editingTask.AssignedToId ?? 0);
+                SelectComboById(cboReviewer1, _editingTask.Reviewer1Id  ?? 0);
+                SelectComboById(cboReviewer2, _editingTask.Reviewer2Id  ?? 0);
+                SelectComboById(cboTester,    _editingTask.TesterId     ?? 0);
+            }
+        }
+
+        /// <summary>
+        /// Lấy danh sách thành viên dự án (qua ProjectMember, LeftAt == null)
+        /// và đổ vào 3 ComboBox vai trò.
+        /// </summary>
+        private async Task LoadProjectMembersAsync(int projectId)
+        {
+            try
+            {
+                var members = await _projectService.GetMembersAsync(projectId);
+
+                var activeMembers = members
+                    .Where(m => m.LeftAt == null && m.User != null)
+                    .Select(m => m.User)
+                    .OrderBy(u => u.FullName)
+                    .ToList();
+
+                // Assignee dùng wording "— Chưa gán —" theo convention cũ
+                cboAssignee.Items.Clear();
+                cboAssignee.Items.Add(new ComboItem(0, "— Chưa gán —"));
+                foreach (var u in activeMembers)
+                    cboAssignee.Items.Add(new ComboItem(u.Id, u.FullName));
+                cboAssignee.SelectedIndex = 0;
+
+                // Reviewer1/2 + Tester dùng "--- Không chọn ---"
+                FillUserCombo(cboReviewer1, activeMembers);
+                FillUserCombo(cboReviewer2, activeMembers);
+                FillUserCombo(cboTester,    activeMembers);
+
+                cboAssignee.AdjustDropDownWidth();
+                cboReviewer1.AdjustDropDownWidth();
+                cboReviewer2.AdjustDropDownWidth();
+                cboTester.AdjustDropDownWidth();
+
+                // Enable cả 4 combo
+                SetMemberCombosEnabled(true);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Không thể tải danh sách thành viên dự án:\n" + ex.Message,
+                    "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        /// <summary>
+        /// Bật/tắt hiển thị 3 cặp Label+ComboBox Reviewer1/Reviewer2/Tester.
+        /// Khi ẩn → user chưa chọn dự án; khi hiện → đã có project context.
+        /// </summary>
+        private void SetMemberCombosEnabled(bool enabled)
+        {
+            cboAssignee.Enabled  = enabled;
+            cboReviewer1.Enabled = enabled;
+            cboReviewer2.Enabled = enabled;
+            cboTester.Enabled    = enabled;
+
+            if (!enabled)
+            {
+                ResetComboToPlaceholder(cboAssignee,  "(Chọn dự án trước)");
+                ResetComboToPlaceholder(cboReviewer1, "(Chọn dự án trước)");
+                ResetComboToPlaceholder(cboReviewer2, "(Chọn dự án trước)");
+                ResetComboToPlaceholder(cboTester,    "(Chọn dự án trước)");
+            }
+        }
+
+        private static void ResetComboToPlaceholder(ComboBox cbo, string placeholder)
+        {
+            cbo.Items.Clear();
+            cbo.Items.Add(new ComboItem(0, placeholder));
+            cbo.SelectedIndex = 0;
+        }
+
+        private static void FillUserCombo(ComboBox cbo, IEnumerable<User> users)
+        {
+            cbo.Items.Clear();
+            cbo.Items.Add(new ComboItem(0, "--- Không chọn ---"));
+            foreach (var u in users)
+                cbo.Items.Add(new ComboItem(u.Id, u.FullName));
+            cbo.SelectedIndex = 0;
         }
 
         // ── Load for Edit ─────────────────────────────────────────────────────
@@ -306,20 +411,41 @@ namespace TaskFlowManagement.WinForms.Forms
             if (_editingTask.DueDate.HasValue)
             {
                 chkHasDueDate.Checked = true;
-                dtpDueDate.Value = _editingTask.DueDate.Value.ToLocalTime();
+                
+                var existingDate = _editingTask.DueDate.Value.ToLocalTime().Date;
+                
+                // Nếu deadline cũ đã ở trong quá khứ (task cũ chưa làm xong),
+                // tạm hạ MinDate xuống chính ngày đó để hiển thị được;
+                // user sẽ thấy và chủ động cập nhật deadline mới.
+                if (existingDate < DateTime.Today)
+                    dtpDueDate.MinDate = existingDate;
+                else
+                    dtpDueDate.MinDate = DateTime.Today;
+                
+                dtpDueDate.Value = existingDate;
                 dtpDueDate.Enabled = true;
             }
             else
             {
-                chkHasDueDate.Checked = false;
-                dtpDueDate.Enabled = false;
+                dtpDueDate.MinDate = DateTime.Today;
             }
 
+            cboProject.SelectedIndexChanged -= cboProject_SelectedIndexChanged;
             SelectComboById(cboProject, _editingTask.ProjectId);
+            cboProject.SelectedIndexChanged += cboProject_SelectedIndexChanged;
+
+            // Gọi tường minh: load member của dự án này → re-select 4 vai trò
+            if (_editingTask.ProjectId > 0)
+            {
+                await LoadProjectMembersAsync(_editingTask.ProjectId);
+                SelectComboById(cboAssignee,  _editingTask.AssignedToId ?? 0);
+                SelectComboById(cboReviewer1, _editingTask.Reviewer1Id  ?? 0);
+                SelectComboById(cboReviewer2, _editingTask.Reviewer2Id  ?? 0);
+                SelectComboById(cboTester,    _editingTask.TesterId     ?? 0);
+            }
             SelectComboById(cboPriority, _editingTask.PriorityId);
             SelectComboById(cboStatus, _editingTask.StatusId);
             SelectComboById(cboCategory, _editingTask.CategoryId);
-            SelectComboById(cboAssignee, _editingTask.AssignedToId ?? 0);
 
             // Phân quyền chỉnh sửa
             bool isManager = AppSession.Roles.Any(r =>
@@ -333,7 +459,6 @@ namespace TaskFlowManagement.WinForms.Forms
             cboProject.Enabled = isManager;
             cboStatus.Enabled = canEditOrComment;
             cboPriority.Enabled = isManager;
-            cboAssignee.Enabled = canEditOrComment;
 
             // Mở khóa các control bình luận và đính kèm
             txtNewComment.Enabled = canEditOrComment;
@@ -361,7 +486,6 @@ namespace TaskFlowManagement.WinForms.Forms
             cboProject.Enabled = true;
             cboStatus.Enabled = true;
             cboPriority.Enabled = isManagerOrAbove;
-            cboAssignee.Enabled = true;
         }
 
         // ── Events ────────────────────────────────────────────────────────────
@@ -518,6 +642,14 @@ namespace TaskFlowManagement.WinForms.Forms
             if (GetComboId(cboStatus) <= 0)
             { MessageBox.Show("Vui lòng chọn trạng thái công việc.", "Thiếu thông tin", MessageBoxButtons.OK, MessageBoxIcon.Warning); cboStatus.Focus(); return false; }
 
+            if (chkHasDueDate.Checked && dtpDueDate.Value.Date < DateTime.Today)
+            {
+                MessageBox.Show("Ngày hạn chót không thể là ngày trong quá khứ.",
+                    "Ngày không hợp lệ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                dtpDueDate.Focus();
+                return false;
+            }
+
             return true;
         }
 
@@ -536,7 +668,13 @@ namespace TaskFlowManagement.WinForms.Forms
             task.CategoryId = GetComboId(cboCategory);
 
             var assigneeId = GetComboId(cboAssignee);
+            var reviewer1Id = GetComboId(cboReviewer1);
+            var reviewer2Id = GetComboId(cboReviewer2);
+            var testerId    = GetComboId(cboTester);
             task.AssignedToId = assigneeId > 0 ? assigneeId : null;
+            task.Reviewer1Id = reviewer1Id > 0 ? reviewer1Id : null;
+            task.Reviewer2Id = reviewer2Id > 0 ? reviewer2Id : null;
+            task.TesterId    = testerId    > 0 ? testerId    : null;
 
             task.ProgressPercent = (byte)numProgress.Value;
             task.IsCompleted = chkIsCompleted.Checked;

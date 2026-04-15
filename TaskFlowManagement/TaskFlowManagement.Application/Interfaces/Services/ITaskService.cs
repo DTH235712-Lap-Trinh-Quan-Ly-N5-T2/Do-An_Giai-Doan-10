@@ -13,6 +13,19 @@ namespace TaskFlowManagement.Core.Interfaces.Services
     ///   - GetLookupDataAsync: lấy Priority, Status, Category cho dropdown frmTaskEdit
     ///   - GetTasksForReviewerAsync / GetTasksForTesterAsync: cho màn hình Review/Test
     /// </summary>
+    
+    /// <summary>DTO nhẹ chứa thông tin thông báo polling từ TaskItem.</summary>
+    public class NotificationItem
+    {
+        public int TaskId { get; set; }
+        public string TaskTitle { get; set; } = string.Empty;
+        public int StatusId { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string Message { get; set; } = string.Empty;
+        public NotificationLevel Level { get; set; }
+        public DateTime UpdatedAt { get; set; }
+    }
+    
     public interface ITaskService
     {
         /// <summary>
@@ -212,5 +225,14 @@ namespace TaskFlowManagement.Core.Interfaces.Services
         /// Format: {newProjectCode}-{thứ tự} (sắp xếp theo Id tăng dần).
         /// </summary>
         Task SyncTaskCodesAsync(int projectId, string newProjectCode);
+
+        /// <summary>
+        /// POLLING NOTIFICATION (GD10): Tìm các task vừa thay đổi trạng thái
+        /// và liên quan đến user (assignee/reviewer1/reviewer2/tester) trong khoảng thời gian gần đây.
+        /// </summary>
+        /// <param name="userId">Id của user đang đăng nhập</param>
+        /// <param name="sinceUtc">Mốc thời gian gần nhất đã polling (UTC)</param>
+        /// <returns>Danh sách thông báo mới chưa thấy</returns>
+        Task<List<NotificationItem>> GetNewNotificationsAsync(int userId, DateTime sinceUtc);
     }
 }

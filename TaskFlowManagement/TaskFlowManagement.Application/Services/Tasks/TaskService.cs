@@ -32,6 +32,7 @@ namespace TaskFlowManagement.Core.Services.Tasks
         private readonly IProjectRepository _projectRepo;
         private readonly ICommentRepository _commentRepo;
         private readonly IAttachmentRepository _attachmentRepo;
+        private readonly INotificationService _notification;
 
         public event EventHandler? TaskDataChanged;
 
@@ -40,13 +41,15 @@ namespace TaskFlowManagement.Core.Services.Tasks
             IUserRepository userRepo,
             IProjectRepository projectRepo,
             ICommentRepository commentRepo,
-            IAttachmentRepository attachmentRepo)
+            IAttachmentRepository attachmentRepo,
+            INotificationService notification)
         {
             _taskRepo = taskRepo ?? throw new ArgumentNullException(nameof(taskRepo));
             _userRepo = userRepo ?? throw new ArgumentNullException(nameof(userRepo));
             _projectRepo = projectRepo ?? throw new ArgumentNullException(nameof(projectRepo));
             _commentRepo = commentRepo ?? throw new ArgumentNullException(nameof(commentRepo));
             _attachmentRepo = attachmentRepo ?? throw new ArgumentNullException(nameof(attachmentRepo));
+            _notification   = notification   ?? throw new ArgumentNullException(nameof(notification));
         }
 
         public void NotifyDataChanged()
@@ -280,7 +283,7 @@ namespace TaskFlowManagement.Core.Services.Tasks
                     "Bạn chỉ có thể thay đổi trạng thái công việc được giao cho mình.\n" +
                     "Liên hệ Manager nếu cần thay đổi task khác.");
             }
-
+            DispatchStatusNotification(task, statusId);
             if (statusId == 9 || statusId == 10)
             {
                 task.StatusId = statusId;
@@ -561,6 +564,131 @@ namespace TaskFlowManagement.Core.Services.Tasks
 
             if (ordered.Count > 0)
                 NotifyDataChanged();
+        }
+
+        /// <summary>
+        /// Map StatusId → đối tượng nhận thông báo theo workflow.
+        /// Nếu task chưa gán Reviewer/Tester tương ứng → bỏ qua (không bắn).
+        /// </summary>
+        private void DispatchStatusNotification(TaskItem task, int newStatusId)
+        {
+            switch (newStatusId)
+            {
+                case 5 when task.Reviewer1Id.HasValue:   // REVIEW-1
+                    _notification.Push(
+                        task.Reviewer1Id.Value,
+                        "Review lần 1",
+                        $"Bạn có task mới cần Review lần 1: \"{task.Title}\"",
+                        NotificationLevel.Info);
+                    break;
+
+                case 6 when task.Reviewer2Id.HasValue:   // REVIEW-2
+                    _notification.Push(
+                        task.Reviewer2Id.Value,
+                        "Review lần 2",
+                        $"Bạn có task mới cần Review lần 2: \"{task.Title}\"",
+                        NotificationLevel.Info);
+                    break;
+
+                case 8 when task.TesterId.HasValue:      // IN-TEST
+                    _notification.Push(
+                        task.TesterId.Value,
+                        "Chờ kiểm thử",
+                        $"Task đã được duyệt, chờ bạn Kiểm thử: \"{task.Title}\"",
+                        NotificationLevel.Info);
+                    break;
+
+                case 9 when task.AssignedToId.HasValue:  // RESOLVED
+                    _notification.Push(
+                        task.AssignedToId.Value,
+                        "Test thành công",
+                        $"Task của bạn đã Test thành công: \"{task.Title}\"",
+                        NotificationLevel.Success);
+                    break;
+
+                case 4 when task.AssignedToId.HasValue:  // FAILED
+                    _notification.Push(
+                        task.AssignedToId.Value,
+                        "Task bị FAILED",
+                        $"Task của bạn bị đánh FAILED, vui lòng kiểm tra và sửa lỗi: \"{task.Title}\"",
+                        NotificationLevel.Error);
+                    break;
+            }
+        }
+
+        public async Task<List<NotificationItem>> GetNewNotificationsAsync(int userId, DateTime sinceUtc)
+        {
+            var result = new List<NotificationItem>();
+
+            // Query 1 lần: lấy tất cả task user liên quan, đã update sau sinceUtc
+            var (assigned, _)  = await _taskRepo.GetPagedAsync(1, 200, assignedToId: userId);
+            var rev1 = await _taskRepo.GetByReviewer1Async(userId);
+            var rev2 = await _taskRepo.GetByReviewer2Async(userId);
+            var test = await _taskRepo.GetByTesterAsync(userId);
+
+            // Map status → notification cho từng vai trò
+            // Reviewer1: chỉ báo khi status = 5 (REVIEW-1)
+            foreach (var t in rev1.Where(t => t.UpdatedAt > sinceUtc && t.StatusId == 5))
+            {
+                result.Add(BuildNotification(t,
+                    "Review lần 1",
+                    $"Task #{t.Id} \"{t.Title}\" cần bạn Review lần 1",
+                    NotificationLevel.Info));
+            }
+
+            // Reviewer2: chỉ báo khi status = 6 (REVIEW-2)
+            foreach (var t in rev2.Where(t => t.UpdatedAt > sinceUtc && t.StatusId == 6))
+            {
+                result.Add(BuildNotification(t,
+                    "Review lần 2",
+                    $"Task #{t.Id} \"{t.Title}\" cần bạn Review lần 2",
+                    NotificationLevel.Info));
+            }
+
+            // Tester: chỉ báo khi status = 8 (IN-TEST)
+            foreach (var t in test.Where(t => t.UpdatedAt > sinceUtc && t.StatusId == 8))
+            {
+                result.Add(BuildNotification(t,
+                    "Chờ kiểm thử",
+                    $"Task #{t.Id} \"{t.Title}\" đang chờ bạn Test",
+                    NotificationLevel.Info));
+            }
+
+            // Assignee: báo khi status = 9 (RESOLVED) hoặc 4 (FAILED)
+            foreach (var t in assigned.Where(t => t.UpdatedAt > sinceUtc && (t.StatusId == 9 || t.StatusId == 4)))
+            {
+                if (t.StatusId == 9)
+                {
+                    result.Add(BuildNotification(t,
+                        "Test Pass",
+                        $"Task #{t.Id} \"{t.Title}\" của bạn đã Test Pass!",
+                        NotificationLevel.Success));
+                }
+                else
+                {
+                    result.Add(BuildNotification(t,
+                        "Task FAILED",
+                        $"Task #{t.Id} \"{t.Title}\" của bạn bị đánh FAILED!",
+                        NotificationLevel.Error));
+                }
+            }
+
+            // Sắp xếp mới nhất lên đầu
+            return result.OrderByDescending(n => n.UpdatedAt).ToList();
+        }
+
+        private static NotificationItem BuildNotification(TaskItem t, string title, string message, NotificationLevel level)
+        {
+            return new NotificationItem
+            {
+                TaskId    = t.Id,
+                TaskTitle = t.Title,
+                StatusId  = t.StatusId,
+                Title     = title,
+                Message   = message,
+                Level     = level,
+                UpdatedAt = t.UpdatedAt
+            };
         }
     }
 }
