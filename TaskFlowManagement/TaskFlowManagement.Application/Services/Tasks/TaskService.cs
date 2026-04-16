@@ -35,7 +35,7 @@ namespace TaskFlowManagement.Core.Services.Tasks
         private readonly INotificationService _notification;
 
         public event EventHandler? TaskDataChanged;
-
+        
         public TaskService(
             ITaskRepository taskRepo, 
             IUserRepository userRepo,

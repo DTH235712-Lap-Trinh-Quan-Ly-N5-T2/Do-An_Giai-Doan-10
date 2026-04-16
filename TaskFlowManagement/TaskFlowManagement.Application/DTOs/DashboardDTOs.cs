@@ -28,7 +28,6 @@ namespace TaskFlowManagement.Core.DTOs
     public class ProjectProgressDto
     {
         public string ProjectName { get; set; } = string.Empty;
-        // ĐÃ FIX: Đổi sang decimal để đồng bộ độ chính xác với Budget
         public decimal ProgressPercentage { get; set; }
     }
 

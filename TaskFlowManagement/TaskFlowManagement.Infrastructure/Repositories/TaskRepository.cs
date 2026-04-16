@@ -433,11 +433,11 @@ namespace TaskFlowManagement.Infrastructure.Repositories
         ///   - 0–3 call tùy chọn: Reviewer1Id / Reviewer2Id / TesterId
         /// </summary>
         public async Task AssignReviewerAsync(
-    int taskId,
-    int? reviewer1Id,
-    int? reviewer2Id,
-    int? testerId,
-    int newStatusId)
+            int taskId,
+            int? reviewer1Id,
+            int? reviewer2Id,
+            int? testerId,
+            int newStatusId)
         {
             using var ctx = _contextFactory.CreateDbContext();
 

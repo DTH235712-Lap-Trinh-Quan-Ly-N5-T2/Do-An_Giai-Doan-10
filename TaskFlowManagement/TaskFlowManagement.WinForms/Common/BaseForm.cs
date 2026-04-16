@@ -35,7 +35,6 @@ namespace TaskFlowManagement.WinForms.Common
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = AutoScaleMode.Font;
 
-            // FIX: UIHelper.FontBase / ColorSurface chỉ gán lúc runtime.
             // Lúc Designer load, LicenseManager.UsageMode == Designtime
             // → assembly chưa được build đầy đủ → gọi UIHelper ở đây gây crash Designer.
             if (!IsInDesignMode())

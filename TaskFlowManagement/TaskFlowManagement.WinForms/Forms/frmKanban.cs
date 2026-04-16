@@ -363,7 +363,6 @@ namespace TaskFlowManagement.WinForms.Forms
 
             try
             {
-                // ── GIỮ NGUYÊN: gọi DB bình thường, await được phép ───────────────
                 var (success, message) = await _taskService!.UpdateStatusAsync(
                     e.TaskId, e.NewStatusId, AppSession.UserId, AppSession.Roles);
 
@@ -373,7 +372,6 @@ namespace TaskFlowManagement.WinForms.Forms
                     return;
                 }
 
-                // ── FIX ObjectDisposedException: bọc phần cập nhật UI vào BeginInvoke ──
                 // DB đã được commit, event call stack đã kết thúc sau await ở trên.
                 // BeginInvoke đảm bảo các thao tác UI này chạy sau khi stack tă kết thúc.
                 this.BeginInvoke(() =>
@@ -400,7 +398,6 @@ namespace TaskFlowManagement.WinForms.Forms
         // ── Xử lý sự kiện: mở form chi tiết ─────────────────────────────────
         private void TaskCard_DoubleClicked(object? sender, int taskId)
         {
-            // ── FIX ObjectDisposedException ──────────────────────────────────
             // Dùng BeginInvoke để post lệnh mở form ra khỏi call stack hiện tại.
             // Điều này cho phép event handler kết thúc an toàn TRƯỚC khi
             // LoadTasksAsync() → ClearAllColumns() → card.Dispose() được gọi.

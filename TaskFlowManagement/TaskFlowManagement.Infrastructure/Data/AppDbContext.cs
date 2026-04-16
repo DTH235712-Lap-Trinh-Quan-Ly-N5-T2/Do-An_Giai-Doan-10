@@ -87,7 +87,7 @@ namespace TaskFlowManagement.Infrastructure.Data
             modelBuilder.Entity<TaskItem>()
                 .HasOne(t => t.CreatedBy).WithMany(u => u.CreatedTasks)
                 .HasForeignKey(t => t.CreatedById)
-                .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.Restrict); // Nếu bạn xóa một User, DB sẽ không cho phép xóa nếu User đó đang gắn với bất kỳ Task nào, giúp tránh mất dữ liệu lịch sử.
 
             // Người được giao thực hiện
             modelBuilder.Entity<TaskItem>()
